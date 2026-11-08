@@ -5,61 +5,13 @@
  * Derived strictly from VWS_DATABASE_SCHEMA.md (DOC-005)
  */
 
-export type TankType = 'OHT' | 'UG';
+import { Timestamp } from 'firebase/firestore';
 
-export interface TankCleaningDetail {
-  tankType: TankType;
-  dimensions: {
-    length: number;    // feet
-    breadth: number;   // feet
-    height: number;    // feet
-  };
-  capacityLitres: number; // Formula: L * B * H * 28.317
-}
+export type PredefinedTankType = 'OHT' | 'UG';
+export type TankType = PredefinedTankType | (string & {});
 
-export type PaymentMode = 'CASH' | 'ONLINE';
-
-export interface SiteRecord {
-  id: string;                          // Document ID (UUIDv4)
-  sequenceNumber: number;              // Monotonic sequence allocated server-side from system_counters/sites_seq
-  siteName: string;                    // Customer / Site Name
-  contactNumber: string;               // 10-digit Indian mobile number
-  locationUrl?: string | null;         // Google Maps URL (pasted or GPS-derived)
-  gpsCoordinates?: {
-    latitude: number;
-    longitude: number;
-    accuracy?: number;
-  } | null;
-  cleaningDate: string;                // ISO date: "YYYY-MM-DD"
-  calendarYear: number;                // e.g. 2026
-  physicalBillNumber: string;          // Manually entered from paper bill book (DEC-09)
-  
-  // Tanks cleaned at this site visit (DEC-06)
-  tanks: TankCleaningDetail[];
-  totalTanksCount: number;
-
-  // Single-Bill Financials (DEC-06, DEC-07)
-  billValue: number;                   // Gross bill amount
-  discount: number;                    // Discount deducted
-  finalValue: number;                  // Net collected = billValue - discount
-  paymentMode: PaymentMode;            // CASH or ONLINE (mandatory choice, no default)
-
-  // Non-Destructive Versioning (DEC-20 through DEC-24)
-  version: number;                     // 1, 2, 3...
-  isLatestValidVersion: boolean;       // true for the active row; false for superseded predecessors
-  originalRecordId: string;            // Root document ID (v1)
-  previousRecordId?: string | null;    // Immediate predecessor ID (null for v1)
-  correctionReason?: string | null;    // Optional reason for correction (DEC-20)
-  
-  // Soft-Deletion & 30-Day Recycle Bin (DEC-12)
-  isDeleted: boolean;                  // Soft-delete flag
-  deletedAt?: Date | null;             // Timestamp when moved to Recycle Bin
-
-  // System & Audit
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;                   // "vetriwatersolutions@gmail.com"
-}
+export type PaymentMode = 'Cash' | 'Online';
+export type RecordStatus = 'ACTIVE' | 'SUPERSEDED';
 
 export type ExpenseCategory = 
   | 'DIESEL'
@@ -68,45 +20,147 @@ export type ExpenseCategory =
   | 'DAILY_LABOUR'
   | 'MAINTENANCE_AND_SPARES';
 
-export interface ExpenseItem {
-  id: string;                          // UUIDv4
-  category: ExpenseCategory;
-  amount: number;
-  description: string;
-  isPersonal: boolean;                 // true = personal ledger; false = official business ledger
+export interface TankSpec {
+  tankId?: string;                     // e.g. "tank_1"
+  tankIndex?: number;                  // 1-based index
+  tankType: TankType;                  // Strictly 'OHT' | 'UG' in initial UI (DEC-25)
+  length: number;                      // Length in Feet (ft)
+  breadth: number;                     // Breadth in Feet (ft)
+  height: number;                      // Height in Feet (ft)
+  capacityLitres: number;              // Volume in Litres (L) = L * B * H * 28.317
+  capacity?: number;                   // Alias for capacityLitres
+  measurementUnit?: 'Feet';            // 'Feet'
+  capacityUnit?: 'Litres';             // 'Litres'
+  notes?: string;
+}
+
+// Backward-compatible alias
+export type TankCleaningDetail = TankSpec;
+
+export interface GoogleLocationData {
+  mapsUrl?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  } | null;
+  captureMethod?: 'MANUAL_URL' | 'GPS' | 'BOTH' | 'NONE';
+}
+
+export interface SiteRecord {
+  id: string;                          // Document ID (UUIDv4)
+  sequenceNumber: number;              // Monotonic sequence (system_counters/sites_seq)
+  siteNumber?: number;                 // Display alias for sequenceNumber
+  year: number;                        // Calendar Year (e.g. 2026)
+  calendarYear?: number;               // Alias for year
+  workDate: string;                    // "YYYY-MM-DD"
+  customerName: string;
+  location: string;
+  contactNumber: string;
+  googleLocation?: string | GoogleLocationData | null;
   
-  // Staff Specific Metadata (DEC-13, DEC-14, POQ-01)
-  workerHeadcount?: number;            // For DAILY_LABOUR: count of staff on site
-  staffName?: string;                  // For SALARY: staff member name
-  salaryMonth?: string;                // For SALARY: e.g. "2026-02" (POQ-01 dual attribution)
+  // Single Combined Billing Fields
+  billNumber: string;                  // Manually entered from physical bill book (DEC-10)
+  paymentMode: PaymentMode;            // 'Cash' | 'Online' (Mandatory explicit choice; DEC-11)
+  totalTanks: number;                  // Number of tanks
+  tanks: TankSpec[];                   // Tank specifications array
+  
+  billValuePaise: number;              // Gross billing in integer paise (REC-04)
+  discountPaise: number;               // Discount in paise
+  finalValuePaise: number;             // Net bill in paise = billValuePaise - discountPaise
+  
+  // Non-Destructive Versioning (v1 -> v2 -> v3)
+  version: number;                     // 1, 2, 3...
+  originalRecordId: string;            // Root document ID (v1)
+  previousRecordId?: string | null;    // Predecessor version ID (null for v1)
+  status: RecordStatus;                // 'ACTIVE' | 'SUPERSEDED'
+  isLatestValidVersion: boolean;       // true for active version
+  correctedAt?: Timestamp | Date | null;
+  correctionReason?: string | null;    // Optional reason for correction (DEC-01)
+  
+  // Soft-Deletion & 30-Day Recycle Bin
+  isDeleted: boolean;
+  deletedAt?: Timestamp | Date | null;
+  deletedBy?: string | null;
+  expiresForPurgeAt?: Timestamp | Date | null; // 30-day purge threshold
+  
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
+  createdBy?: string;
+}
+
+export interface SalaryEntry {
+  type: 'INDIVIDUAL' | 'COMBINED_LUMP_SUM';
+  staffName?: string;
+  amountPaise: number;
+  salaryMonth?: string;                // e.g. "2026-03" (POQ-01 dual attribution)
+  notes?: string;
+}
+
+// Backward-compatible alias
+export type ExpenseItem = SalaryEntry;
+
+export interface OfficialExpenseData {
+  refreshmentPaise: number;
+  transportPaise: number;
+  sparesHOPaise: number;
+  staffAttendanceCount: number;        // Worker headcount present (DEC-13)
+  staffAttendanceExpensePaise: number; // Combined Wages + Tea + Bata (DEC-13)
+  salaryEntries?: SalaryEntry[];
+  staffSalaryPaise: number;
+  notes?: string;
+  totalOfficialPaise: number;
+}
+
+export interface PersonalExpenseData {
+  transportPaise: number;
+  refreshmentPaise: number;
+  groceriesVegMilkPaise: number;
+  lunchDinnerPaise: number;
+  otherPaise: number;
+  notes?: string;
+  totalPersonalPaise: number;
 }
 
 export interface DailyAccountsRecord {
-  id: string;                          // Document ID: "YYYY-MM-DD"
-  date: string;                        // "YYYY-MM-DD"
-  calendarYear: number;                // e.g. 2026
+  id?: string;
+  entryDate: string;                   // "YYYY-MM-DD"
+  date?: string;                       // Alias for entryDate
+  year?: number;
+  calendarYear?: number;
   
-  expenses: ExpenseItem[];
+  official: OfficialExpenseData;
+  personal: PersonalExpenseData;
   
-  // Calculated Aggregates
-  totalOfficialExpenses: number;
-  totalPersonalExpenses: number;
-  totalExpenses: number;
-  totalCollections: number;            // Daily collections from site visits
-  netDailyBalance: number;             // totalCollections - totalExpenses
-
-  // Revision & Audit Log
-  revisionsCount: number;              // Monotonic revision counter
-  updatedAt: Date;
+  dailyGrandTotalPaise: number;
+  revisionsCount: number;
+  
+  isDeleted?: boolean;
+  deletedAt?: Timestamp | Date | null;
+  deletedBy?: string | null;
+  expiresForPurgeAt?: Timestamp | Date | null;
+  
+  createdAt?: Timestamp | Date;
+  updatedAt?: Timestamp | Date;
+  createdBy?: string;
 }
 
+export type DailyAccountRecord = DailyAccountsRecord;
+
 export interface AuditLogEntry {
-  revisionId: string;                  // UUIDv4
-  dateId: string;                      // "YYYY-MM-DD"
-  revisionNumber: number;
-  timestamp: Date;
+  revisionId: string;
+  entryDate?: string;
+  timestamp: Timestamp | Date;
   modifiedBy: string;
-  fieldDiff: Record<string, { oldValue: unknown; newValue: unknown }>;
+  previousTotals?: {
+    officialPaise: number;
+    personalPaise: number;
+    grandTotalPaise: number;
+  };
+  newTotals?: {
+    officialPaise: number;
+    personalPaise: number;
+    grandTotalPaise: number;
+  };
   reason?: string;
 }
 
@@ -127,66 +181,56 @@ export type CanonicalTaskStatus =
   | 'WAITING_REAUTH';
 
 export interface SystemTaskRecord {
-  taskId: string;                      // TASK_{type}_{scope}
+  taskId: string;
   taskType: CanonicalTaskType;
   status: CanonicalTaskStatus;
-  idempotencyKey: string;              // IDEMP_{type}_{scope}
+  idempotencyKey: string;
   payload: Record<string, unknown>;
-  
   initiatingSource: 'CLOUD_SCHEDULER' | 'CLIENT_WEB' | 'CLIENT_ANDROID' | 'WORKER_INTERNAL';
   initiatorInstanceId: string;
   leaseOwner?: string | null;
-  leaseExpiry?: Date | null;
-  heartbeatAt?: Date | null;
-  
-  createdAt: Date;
-  scheduledFor: Date;
+  leaseExpiry?: Timestamp | Date | null;
+  heartbeatAt?: Timestamp | Date | null;
+  createdAt: Timestamp | Date;
+  scheduledFor: Timestamp | Date;
   attempts: number;
   maxAttempts: number;
-  nextRetryAt?: Date | null;
-  
+  nextRetryAt?: Timestamp | Date | null;
   exportVersion?: number | null;
   payloadChecksum?: string | null;
   stagedPayloadUri?: string | null;
   payloadSizeBytes?: number | null;
   driveFileId?: string | null;
-  
   errorClassification?: string | null;
   terminalFailureReason?: string | null;
   lastError?: string | null;
-  
-  updatedAt: Date;
-  completedAt?: Date | null;
+  updatedAt: Timestamp | Date;
+  completedAt?: Timestamp | Date | null;
 }
 
-export type OperationStatus = 'IN_PROGRESS' | 'COMMITTED' | 'NOT_COMMITTED' | 'ABORTED' | 'UNKNOWN';
-
 export interface CommittedOperationRecord {
-  idempotencyKey: string;              // OP_IDEMP_{deviceId}_{targetDocId}_{baseRev}_{revNum}_{hash}
-  operationId: string;                 // UUIDv4
-  operationType: 'SITE_JOB_COMMIT' | 'SITE_CORRECTION_COMMIT' | 'DAILY_ACCOUNTS_COMMIT';
-  status: OperationStatus;
-  targetDocId: string;
-  targetCollection: string;
-  
-  workerId?: string | null;
-  fenceToken?: number | null;
-  leaseExpiresAt?: Date | null;
-  
-  committedAt?: Date | null;
-  serverTimestamp?: Date | null;
-  firstDispatchedAt?: Date | null;
-  executionResult?: Record<string, unknown> | null;
-  
+  idempotencyKey: string;
+  operationId: string;
+  status: 'IN_PROGRESS' | 'COMMITTED' | 'ABORTED_TERMINAL';
+  fenceToken: number;
+  leaseExpiresAt: Timestamp | Date;
+  workerId: string;
+  targetCollection: 'sites' | 'accounts_daily';
+  committedServerDocId?: string | null;
+  committedVersion?: number | null;
+  serverCommittedAt?: Timestamp | Date | null;
   terminalReason?: string | null;
-  abortedAt?: Date | null;
+  abortedAt?: Timestamp | Date | null;
+  clientDeviceId: string;
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
 }
 
 export interface MasterWorkbookPointerRecord {
-  id: 'master_workbook_pointer';
   currentDriveFileId: string;
+  currentFileName: string;
   currentExportVersion: number;
+  publicationStatus: 'PUBLISHED_TO_ROOT' | 'ROOT_COPY_FAILED';
   checksumSha256: string;
-  publicationStatus: 'POINTER_COMMITTED' | 'PUBLISHED_TO_ROOT' | 'ROOT_COPY_FAILED';
-  updatedAt: Date;
+  updatedAt: Timestamp | Date;
 }

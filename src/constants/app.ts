@@ -28,11 +28,11 @@ export const TANK_TYPE_LABELS: Record<TankType, string> = {
  * Payment Modes (DEC-07).
  * Mandatory explicit choice on field form; no silent default to Cash.
  */
-export const PAYMENT_MODES: readonly PaymentMode[] = ['CASH', 'ONLINE'] as const;
+export const PAYMENT_MODES: readonly PaymentMode[] = ['Cash', 'Online'] as const;
 
 export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
-  CASH: 'Cash Payment',
-  ONLINE: 'Online / UPI / Bank Transfer',
+  Cash: 'Cash Payment',
+  Online: 'Online / UPI / Bank Transfer',
 };
 
 /**
