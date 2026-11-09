@@ -93,3 +93,4 @@ describe('Financial Math & Currency Adapter (DEC-07 & REC-04)', () => {
     expect(excessive[2]).toContain('exceeds ₹25,00,000');
   });
 });
+

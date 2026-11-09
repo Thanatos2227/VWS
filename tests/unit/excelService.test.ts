@@ -186,3 +186,4 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
     expect(grandTotalCell.result).toBe(3500);
   });
 });
+

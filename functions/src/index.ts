@@ -1,0 +1,13 @@
+/**
+ * functions/src/index.ts
+ * 
+ * Entry point for Vetri Water Solutions Firebase Cloud Functions (2nd Gen).
+ * Exports authenticated HTTPS callable functions and Cloud Scheduler autonomous backups.
+ */
+
+export { commitSiteJob } from './operations/commitSiteJob.js';
+export { commitSiteCorrection } from './operations/commitSiteCorrection.js';
+export { commitDailyAccountsUpdate } from './operations/commitDailyAccounts.js';
+export { queryOperationStatus } from './operations/queryOperationStatus.js';
+export { scheduledDailyBackup } from './backup/scheduledBackup.js';
+

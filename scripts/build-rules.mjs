@@ -71,3 +71,4 @@ if (compiledContent.includes('__VWS_OWNER_EMAIL__')) {
 // Write ephemeral firestore.rules
 fs.writeFileSync(outputPath, compiledContent, 'utf8');
 console.log(`[build-rules] Successfully compiled ephemeral 'firestore.rules' for owner: ${ownerEmail} (${nodeEnv})`);
+

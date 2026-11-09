@@ -65,3 +65,4 @@ if (emulatorHost && !import.meta.env.PROD) {
     // Emulator already connected
   }
 }
+
