@@ -69,3 +69,4 @@ describe('Architectural Enforcement: No Direct Client Writes', () => {
     expect(content).toContain('callCommitDailyAccountsUpdate');
   });
 });
+

@@ -7,6 +7,7 @@
 
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { HttpsError } from 'firebase-functions/v2/https';
 
 if (getApps().length === 0) {
@@ -14,6 +15,7 @@ if (getApps().length === 0) {
 }
 
 export const adminDb = getFirestore();
+export const adminAuth = getAuth();
 
 export const AUTHORIZED_OWNER_EMAIL = 'vetriwatersolutions@gmail.com';
 

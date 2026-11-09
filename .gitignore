@@ -27,6 +27,7 @@ firestore.rules
 
 # Firebase Cache & Emulators
 .firebase/
+.config/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log

@@ -29,21 +29,24 @@
     }
   ],
   "emulators": {
+    "hub": {
+      "host": "127.0.0.1",
+      "port": 4400
+    },
     "auth": {
+      "host": "127.0.0.1",
       "port": 9099
     },
     "firestore": {
+      "host": "127.0.0.1",
       "port": 8080
     },
     "functions": {
+      "host": "127.0.0.1",
       "port": 5001
     },
-    "hosting": {
-      "port": 5000
-    },
     "ui": {
-      "enabled": true,
-      "port": 4000
+      "enabled": false
     }
   }
 }

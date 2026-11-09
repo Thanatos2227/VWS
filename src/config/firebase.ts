@@ -63,7 +63,8 @@ export const db: Firestore = dbInstance;
 export const functions: Functions = getFunctions(app, 'asia-south1');
 
 // Optional Emulator Hooks for local integration testing (DOC-006 §7 / VER-10)
-const emulatorHost = import.meta.env.VITE_FIREBASE_EMULATOR_HOST;
+const emulatorHost = import.meta.env.VITE_FIREBASE_EMULATOR_HOST || 
+  (typeof process !== 'undefined' ? (process.env.VITE_FIREBASE_EMULATOR_HOST || (process.env.FIRESTORE_EMULATOR_HOST ? process.env.FIRESTORE_EMULATOR_HOST.split(':')[0] : undefined)) : undefined);
 if (emulatorHost && !import.meta.env.PROD) {
   try {
     connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });

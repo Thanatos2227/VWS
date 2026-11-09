@@ -100,3 +100,4 @@ describe('Account Service — Callable Cloud Functions Integration', () => {
     )).rejects.toThrow('Failed to fetch');
   });
 });
+

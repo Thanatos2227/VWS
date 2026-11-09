@@ -234,3 +234,4 @@ Now that client mutations route through a centralized callable client, the next 
    - Connect the unmounted modal in `AppLayout.tsx` to handle optimistic concurrency version conflicts when network reconnects.
 4. **Enable Seamless Offline-to-Online Flush:**
    - Automatically dequeue and commit mutations in FIFO sequence upon network restoration.
+
