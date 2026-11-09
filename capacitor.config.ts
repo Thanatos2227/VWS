@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.vetriwatersolutions.app',
+  appId: 'com.vetri.watersolutions',
   appName: 'Vetri Water Solutions',
   webDir: 'dist',
   server: {

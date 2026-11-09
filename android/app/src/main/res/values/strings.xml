@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vetri Water Solutions</string>
+    <string name="title_activity_main">Vetri Water Solutions</string>
+    <string name="package_name">com.vetri.watersolutions</string>
+    <string name="custom_url_scheme">com.vetri.watersolutions</string>
+</resources>

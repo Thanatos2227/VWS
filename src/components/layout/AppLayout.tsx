@@ -8,6 +8,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Network } from '@capacitor/network';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Droplets, 
@@ -44,15 +46,31 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [signingOut, setSigningOut] = useState<boolean>(false);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    let cleanup: (() => void) | undefined;
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    if (Capacitor.isPluginAvailable('Network')) {
+      Network.getStatus().then((status) => setIsOnline(status.connected));
+      const networkListener = Network.addListener('networkStatusChange', (status) => {
+        setIsOnline(status.connected);
+      });
+      cleanup = () => {
+        networkListener.then((handle) => handle.remove());
+      };
+    } else {
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      cleanup = () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      if (cleanup) cleanup();
     };
   }, []);
 

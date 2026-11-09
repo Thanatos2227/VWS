@@ -10,6 +10,7 @@
 import React, { useState } from 'react';
 import { SiteRecord, DailyAccountsRecord } from '../../types/database';
 import { downloadExcelWorkbook } from '../../services/excelService';
+import { saveFileToDevice } from '../../utils/fileDownloader';
 import { 
   Cloud, 
   Download, 
@@ -85,28 +86,13 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
       setLastSha256(hashHex);
 
       // Download JSON File
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const filename = `VWS_Database_Dump_${timestamp}.json`;
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await saveFileToDevice(filename, jsonString, 'application/json');
 
       // Download companion SHA-256 manifest
-      const shaBlob = new Blob([`${hashHex}  ${filename}\n`], { type: 'text/plain' });
-      const shaUrl = URL.createObjectURL(shaBlob);
-      const shaA = document.createElement('a');
-      shaA.href = shaUrl;
-      shaA.download = `${filename}.sha256`;
-      document.body.appendChild(shaA);
-      shaA.click();
-      document.body.removeChild(shaA);
-      URL.revokeObjectURL(shaUrl);
+      const shaContent = `${hashHex}  ${filename}\n`;
+      await saveFileToDevice(`${filename}.sha256`, shaContent, 'text/plain');
 
       setLastJsonDumpTime(new Date().toLocaleTimeString('en-IN'));
     } catch (err) {

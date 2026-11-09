@@ -11,6 +11,7 @@
 import ExcelJS from 'exceljs';
 import { SiteRecord, DailyAccountsRecord } from '../types/database';
 import { toRupees } from '../utils/money';
+import { saveFileToDevice } from '../utils/fileDownloader';
 
 export interface ExcelExportData {
   calendarYears: number[];
@@ -385,7 +386,7 @@ function buildAccountsSheet(
 }
 
 /**
- * Downloads the master workbook as an Excel (.xlsx) file in the user's browser.
+ * Downloads the master workbook as an Excel (.xlsx) file in the user's browser or native device storage.
  */
 export async function downloadExcelWorkbook(data: ExcelExportData): Promise<void> {
   const workbook = await buildMasterWorkbook(data);
@@ -394,12 +395,8 @@ export async function downloadExcelWorkbook(data: ExcelExportData): Promise<void
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'Vetri_Water_Solutions.xlsx';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const res = await saveFileToDevice('Vetri_Water_Solutions.xlsx', blob, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  if (!res.success) {
+    throw new Error(res.error || 'Failed to save Excel file');
+  }
 }

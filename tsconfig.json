@@ -24,7 +24,11 @@
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "firebase-functions/v2/https": ["functions/node_modules/firebase-functions/lib/v2/providers/https.d.ts"],
+      "firebase-functions": ["functions/node_modules/firebase-functions/lib/index.d.ts"],
+      "firebase-admin/*": ["functions/node_modules/firebase-admin/lib/*"],
+      "firebase-admin": ["functions/node_modules/firebase-admin/lib/index.d.ts"]
     }
   },
   "include": ["src", "tests", "scripts"],

@@ -16,10 +16,9 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { 
   signInWithEmailAndPassword, 
-  signOut, 
-  createUserWithEmailAndPassword 
+  signOut 
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../src/config/firebase';
 import { adminDb, adminAuth, AUTHORIZED_OWNER_EMAIL } from '../../functions/src/config';
 import { 

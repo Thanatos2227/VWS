@@ -29,6 +29,10 @@ import {
 } from './services/siteService';
 import { subscribeDailyAccountsForYear } from './services/accountService';
 import { downloadExcelWorkbook } from './services/excelService';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 const AuthenticatedApp: React.FC = () => {
   const { currentUser } = useAuth();
@@ -49,6 +53,43 @@ const AuthenticatedApp: React.FC = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
   const [historySite, setHistorySite] = useState<SiteRecord | null>(null);
   const [accountsInitialDate, setAccountsInitialDate] = useState<string | undefined>(undefined);
+
+  // Native Android Device Integration (Back Button, Splash Screen, Status Bar)
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      // Hide Splash Screen once app is authenticated and mounted
+      SplashScreen.hide().catch(() => {});
+
+      // Configure Status Bar for high-contrast outdoor visibility
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#0284c7' }).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const backListener = CapacitorApp.addListener('backButton', () => {
+      if (isSiteModalOpen) {
+        setIsSiteModalOpen(false);
+        return;
+      }
+      if (isHistoryModalOpen) {
+        setIsHistoryModalOpen(false);
+        return;
+      }
+      if (activeTab !== 'dashboard') {
+        setActiveTab('dashboard');
+        return;
+      }
+      // On root dashboard, minimize / exit
+      CapacitorApp.exitApp();
+    });
+
+    return () => {
+      backListener.then((handle) => handle.remove());
+    };
+  }, [isSiteModalOpen, isHistoryModalOpen, activeTab]);
 
   // Real-time Subscriptions
   useEffect(() => {
