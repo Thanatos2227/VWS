@@ -17,7 +17,7 @@ if (getApps().length === 0) {
 export const adminDb = getFirestore();
 export const adminAuth = getAuth();
 
-export const AUTHORIZED_OWNER_EMAIL = 'vetriwatersolutions@gmail.com';
+export const AUTHORIZED_OWNER_EMAIL = 'vetriwatersolution@gmail.com';
 
 /**
  * Validates that an incoming callable request originates from the authenticated owner.

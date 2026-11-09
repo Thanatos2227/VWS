@@ -79,4 +79,26 @@ describe('Firestore Declarative Security Rules (VER-10 / DOC-006)', () => {
       expect(tasksSection).toContain('request.resource.data.attempts == 0');
     });
   });
+
+  describe('Compiled firestore.rules Single-Owner Identity Verification', () => {
+    const compiledPath = resolve(__dirname, '../../firestore.rules');
+    let compiledContent: string;
+
+    beforeAll(() => {
+      expect(existsSync(compiledPath)).toBe(true);
+      compiledContent = readFileSync(compiledPath, 'utf-8');
+    });
+
+    it('contains no unreplaced __VWS_OWNER_EMAIL__ placeholder in compiled rules', () => {
+      expect(compiledContent).not.toContain('__VWS_OWNER_EMAIL__');
+    });
+
+    it('enforces authoritative owner email vetriwatersolution@gmail.com in compiled rules', () => {
+      expect(compiledContent).toContain('request.auth.token.email == "vetriwatersolution@gmail.com"');
+    });
+
+    it('strictly does not contain the old owner email vetriwatersolutions@gmail.com in compiled rules', () => {
+      expect(compiledContent).not.toContain('vetriwatersolutions@gmail.com');
+    });
+  });
 });

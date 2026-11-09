@@ -72,7 +72,7 @@ describe('Site Service — Callable Cloud Functions Integration', () => {
         serverCommittedAt: '2026-11-09T10:00:00.000Z'
       });
 
-      const result = await createSiteEntry(validSiteForm, 'vetriwatersolutions@gmail.com');
+      const result = await createSiteEntry(validSiteForm, 'vetriwatersolution@gmail.com');
 
       expect(callableClient.callCommitSiteJob).toHaveBeenCalledTimes(1);
       const passedPayload = vi.mocked(callableClient.callCommitSiteJob).mock.calls[0][0];
@@ -133,7 +133,7 @@ describe('Site Service — Callable Cloud Functions Integration', () => {
         expiresForPurgeAt: null,
         createdAt: { seconds: 1731140000, nanoseconds: 0 } as any,
         updatedAt: { seconds: 1731140000, nanoseconds: 0 } as any,
-        createdBy: 'vetriwatersolutions@gmail.com'
+        createdBy: 'vetriwatersolution@gmail.com'
       };
 
       vi.mocked(callableClient.callCommitSiteCorrection).mockResolvedValue({
@@ -148,7 +148,7 @@ describe('Site Service — Callable Cloud Functions Integration', () => {
         correctionReason: 'Added discount of ₹500'
       };
 
-      const result = await createSiteCorrection(previousRecord, updatedForm, 'vetriwatersolutions@gmail.com');
+      const result = await createSiteCorrection(previousRecord, updatedForm, 'vetriwatersolution@gmail.com');
 
       expect(callableClient.callCommitSiteCorrection).toHaveBeenCalledTimes(1);
       const passedPayload = vi.mocked(callableClient.callCommitSiteCorrection).mock.calls[0][0];
@@ -174,7 +174,7 @@ describe('Site Service — Callable Cloud Functions Integration', () => {
         serverCommittedAt: '2026-11-09T12:00:00.000Z'
       });
 
-      await softDeleteSite('site_del_1', 'vetriwatersolutions@gmail.com');
+      await softDeleteSite('site_del_1', 'vetriwatersolution@gmail.com');
 
       expect(callableClient.callCommitSiteStatusChange).toHaveBeenCalledTimes(1);
       const payload = vi.mocked(callableClient.callCommitSiteStatusChange).mock.calls[0][0];

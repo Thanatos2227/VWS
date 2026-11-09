@@ -66,7 +66,7 @@ describe('Account Service — Callable Cloud Functions Integration', () => {
       '2026-11-09',
       officialData,
       personalData,
-      'vetriwatersolutions@gmail.com',
+      'vetriwatersolution@gmail.com',
       'Daily update'
     );
 
@@ -96,7 +96,7 @@ describe('Account Service — Callable Cloud Functions Integration', () => {
       '2026-11-09',
       officialData,
       personalData,
-      'vetriwatersolutions@gmail.com'
+      'vetriwatersolution@gmail.com'
     )).rejects.toThrow('Failed to fetch');
   });
 });

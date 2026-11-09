@@ -42,6 +42,8 @@ import { Timestamp } from 'firebase-admin/firestore';
 const OWNER_PASSWORD = 'OwnerPassword123!';
 const ATTACKER_EMAIL = 'attacker@evil.com';
 const ATTACKER_PASSWORD = 'AttackerPassword123!';
+const PREVIOUS_OWNER_EMAIL = 'vetriwatersolutions@gmail.com';
+const PREVIOUS_OWNER_PASSWORD = 'OldOwnerPassword123!';
 
 async function setupAuthEmulatorUsers() {
   // 1. Create or ensure Owner user in Auth Emulator with verified email
@@ -73,6 +75,23 @@ async function setupAuthEmulatorUsers() {
       await adminAuth.createUser({
         email: ATTACKER_EMAIL,
         password: ATTACKER_PASSWORD,
+        emailVerified: true
+      });
+    }
+  }
+
+  // 3. Create or ensure Previous Owner user in Auth Emulator (vetriwatersolutions@gmail.com)
+  try {
+    const oldOwner = await adminAuth.getUserByEmail(PREVIOUS_OWNER_EMAIL);
+    await adminAuth.updateUser(oldOwner.uid, {
+      emailVerified: true,
+      password: PREVIOUS_OWNER_PASSWORD
+    });
+  } catch (err: any) {
+    if (err.code === 'auth/user-not-found') {
+      await adminAuth.createUser({
+        email: PREVIOUS_OWNER_EMAIL,
+        password: PREVIOUS_OWNER_PASSWORD,
         emailVerified: true
       });
     }
@@ -447,6 +466,34 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
       }
     }, 60000);
 
+    it('strictly rejects previous owner email vetriwatersolutions@gmail.com with permission-denied', async () => {
+      // Sign in as previous owner user
+      await signInWithEmailAndPassword(auth, PREVIOUS_OWNER_EMAIL, PREVIOUS_OWNER_PASSWORD);
+
+      const payload = {
+        idempotencyKey: generateOperationIdempotencyKey('SITE_CREATE', 'OLD_OWNER_REJECT_TEST'),
+        clientDeviceId: getClientDeviceId(),
+        workDate: '2026-11-09',
+        customerName: 'Old Owner Attempt',
+        location: 'Nowhere',
+        contactNumber: '0000000000',
+        billNumber: 'OLD-01',
+        paymentMode: 'Cash' as const,
+        billValuePaise: 100000,
+        discountPaise: 0,
+        finalValuePaise: 100000,
+        tanks: [{ tankType: 'OHT' as const, length: 5, breadth: 4, height: 4, capacityLitres: 2265 }]
+      };
+
+      await expect(callCommitSiteJob(payload)).rejects.toThrow(CallableApiError);
+      try {
+        await callCommitSiteJob(payload);
+      } catch (err: any) {
+        expect(err.code).toBe('permission-denied');
+        expect(err.message).toContain('Access Denied');
+      }
+    }, 60000);
+
     it('rejects non-canonical idempotency keys with invalid-argument', async () => {
       const payload = {
         idempotencyKey: 'INVALID_IDEMP_KEY_WITHOUT_PREFIX',
@@ -536,6 +583,19 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
 
     it('denies unauthorized accounts from reading collections directly', async () => {
       await signInWithEmailAndPassword(auth, ATTACKER_EMAIL, ATTACKER_PASSWORD);
+      await auth.currentUser?.getIdToken(true);
+
+      const sitesCollectionRef = collection(db, 'sites');
+      await expect(getDocs(sitesCollectionRef)).rejects.toThrow();
+      try {
+        await getDocs(sitesCollectionRef);
+      } catch (err: any) {
+        expect(err.code === 'permission-denied' || /false for 'list'|PERMISSION_DENIED/i.test(err.message)).toBe(true);
+      }
+    });
+
+    it('strictly denies previous owner email vetriwatersolutions@gmail.com from reading collections directly', async () => {
+      await signInWithEmailAndPassword(auth, PREVIOUS_OWNER_EMAIL, PREVIOUS_OWNER_PASSWORD);
       await auth.currentUser?.getIdToken(true);
 
       const sitesCollectionRef = collection(db, 'sites');

@@ -77,13 +77,13 @@ describe('OwnerAuthGuard (SCR-01 & DOC-006 §2)', () => {
     );
 
     expect(screen.getByText(/Sign in with Google/i)).toBeInTheDocument();
-    expect(screen.getByText(/vetriwatersolutions@gmail.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/vetriwatersolution@gmail.com/i)).toBeInTheDocument();
     expect(screen.queryByText(/Protected App Content/i)).not.toBeInTheDocument();
   });
 
   it('renders protected app content when authenticated as authorized owner', () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
-      currentUser: { email: 'vetriwatersolutions@gmail.com' } as any,
+      currentUser: { email: 'vetriwatersolution@gmail.com' } as any,
       isOwner: true,
       loading: false,
       unauthorizedAttemptEmail: null,
@@ -99,6 +99,29 @@ describe('OwnerAuthGuard (SCR-01 & DOC-006 §2)', () => {
     );
 
     expect(screen.getByText(/Protected Owner Dashboard/i)).toBeInTheDocument();
+  });
+
+  it('renders unauthorized access screen when attempted by previous owner email vetriwatersolutions@gmail.com', () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: null,
+      isOwner: false,
+      loading: false,
+      unauthorizedAttemptEmail: 'vetriwatersolutions@gmail.com',
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+      clearUnauthorizedState: vi.fn()
+    });
+
+    render(
+      <OwnerAuthGuard>
+        <div>Protected Owner Dashboard</div>
+      </OwnerAuthGuard>
+    );
+
+    expect(screen.getByText(/Unauthorized Access/i)).toBeInTheDocument();
+    expect(screen.getByText(/vetriwatersolutions@gmail.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/Access requires sign-in with/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Protected Owner Dashboard/i)).not.toBeInTheDocument();
   });
 });
 

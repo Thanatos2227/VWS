@@ -3,7 +3,7 @@
  * 
  * Authentication context enforcing Single-Owner Security Architecture.
  * Complies with DOC-006 (Security Architecture §2) and DEC-02 (Single-Owner Application).
- * Only vetriwatersolutions@gmail.com is authorized to enter the application.
+ * Only vetriwatersolution@gmail.com is authorized to enter the application.
  */
 
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';

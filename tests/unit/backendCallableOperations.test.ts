@@ -40,12 +40,35 @@ describe('Backend Cloud Functions — Security & Contract Verification', () => {
       }
     });
 
-    it('successfully returns canonical caller email for authorized owner case-insensitively', () => {
-      const validAuthUpper = { token: { email: 'VETRIWATERSOLUTIONS@GMAIL.COM' } };
+    it('strictly rejects the previous owner email vetriwatersolutions@gmail.com with permission-denied', () => {
+      const oldOwnerAuth = { token: { email: 'vetriwatersolutions@gmail.com' } };
+      expect(() => assertAuthorizedOwner(oldOwnerAuth)).toThrow(HttpsError);
+      try {
+        assertAuthorizedOwner(oldOwnerAuth);
+      } catch (err: any) {
+        expect(err.code).toBe('permission-denied');
+        expect(err.message).toContain('Access restricted to authorized owner (vetriwatersolution@gmail.com)');
+      }
+    });
+
+    it('strictly rejects unrelated third-party Gmail accounts with permission-denied', () => {
+      const unrelatedAuth = { token: { email: 'random.user@gmail.com' } };
+      expect(() => assertAuthorizedOwner(unrelatedAuth)).toThrow(HttpsError);
+      try {
+        assertAuthorizedOwner(unrelatedAuth);
+      } catch (err: any) {
+        expect(err.code).toBe('permission-denied');
+        expect(err.message).toContain('Access restricted to authorized owner (vetriwatersolution@gmail.com)');
+      }
+    });
+
+    it('successfully returns canonical caller email for newly authorized owner vetriwatersolution@gmail.com case-insensitively', () => {
+      const validAuthUpper = { token: { email: 'VETRIWATERSOLUTION@GMAIL.COM' } };
       const email = assertAuthorizedOwner(validAuthUpper);
       expect(email).toBe(AUTHORIZED_OWNER_EMAIL.toLowerCase());
+      expect(email).toBe('vetriwatersolution@gmail.com');
 
-      const validAuthLower = { token: { email: 'vetriwatersolutions@gmail.com ' } };
+      const validAuthLower = { token: { email: 'vetriwatersolution@gmail.com ' } };
       expect(assertAuthorizedOwner(validAuthLower)).toBe(AUTHORIZED_OWNER_EMAIL.toLowerCase());
     });
   });

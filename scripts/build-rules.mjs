@@ -39,7 +39,7 @@ if (!emailRegex.test(ownerEmail)) {
 
 // Invariant 3: Canonical Production Identity Invariant
 if (nodeEnv === 'production') {
-  const canonicalEmail = 'vetriwatersolutions@gmail.com';
+  const canonicalEmail = 'vetriwatersolution@gmail.com';
   if (ownerEmail !== canonicalEmail) {
     console.error(`FATAL: VWS_OWNER_EMAIL mismatch in production. Expected canonical owner '${canonicalEmail}' but received '${ownerEmail}'. Deployment aborted to prevent unauthorized access.`);
     process.exit(1);

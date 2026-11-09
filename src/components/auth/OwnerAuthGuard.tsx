@@ -3,7 +3,7 @@
  * 
  * Single-Owner Gatekeeper Component (SCR-01).
  * Enforces DEC-02 and DOC-006: strictly guards the application and only admits
- * authenticated owner vetriwatersolutions@gmail.com.
+ * authenticated owner vetriwatersolution@gmail.com.
  */
 
 import React, { useState } from 'react';
@@ -26,7 +26,10 @@ export const OwnerAuthGuard: React.FC<OwnerAuthGuardProps> = ({ children }) => {
     try {
       await signInWithGoogle();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Authentication failed. Please check network and try again.';
+      let msg = err instanceof Error ? err.message : 'Authentication failed. Please check network and try again.';
+      if (msg.includes('auth/api-key-not-valid')) {
+        msg = 'Firebase Configuration Error (auth/api-key-not-valid): The application was compiled with an unverified or placeholder Google Cloud API key. Please configure a valid VITE_FIREBASE_API_KEY in .env and reassemble the application.';
+      }
       setErrorMessage(msg);
     } finally {
       setSigningIn(false);

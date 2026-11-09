@@ -26,13 +26,21 @@ import {
   Functions 
 } from 'firebase/functions';
 
+const configuredApiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+const isDevOrTest = import.meta.env.DEV || import.meta.env.MODE === 'test' || typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
+// In production, validate that an API key is provided
+if (!configuredApiKey && !isDevOrTest) {
+  console.warn('[VWS Firebase] WARNING: VITE_FIREBASE_API_KEY is missing from environment. Real Google Identity endpoints will fail without a valid key.');
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyMockKeyForDevPhase02LocalInitOnly',
+  apiKey: configuredApiKey || 'AIzaSyMockKeyForDevPhase02LocalInitOnly',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vetri-water-solutions.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vetri-water-solutions',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vetri-water-solutions.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789012',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789012:web:mockappid000000000000'
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '108253164729',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:108253164729:web:mockappid000000000000'
 };
 
 // Singleton App Instance
@@ -65,7 +73,7 @@ export const functions: Functions = getFunctions(app, 'asia-south1');
 // Optional Emulator Hooks for local integration testing (DOC-006 §7 / VER-10)
 const emulatorHost = import.meta.env.VITE_FIREBASE_EMULATOR_HOST || 
   (typeof process !== 'undefined' ? (process.env.VITE_FIREBASE_EMULATOR_HOST || (process.env.FIRESTORE_EMULATOR_HOST ? process.env.FIRESTORE_EMULATOR_HOST.split(':')[0] : undefined)) : undefined);
-if (emulatorHost && !import.meta.env.PROD) {
+if (emulatorHost) {
   try {
     connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
     connectFirestoreEmulator(db, emulatorHost, 8080);

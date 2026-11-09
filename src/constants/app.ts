@@ -11,7 +11,7 @@ import { TankType, PaymentMode, ExpenseCategory } from '../types/database';
  * Authoritative business owner email (DEC-02).
  * Application is private single-owner; all client routing and database access is restricted to this email.
  */
-export const AUTHORIZED_OWNER_EMAIL = 'vetriwatersolutions@gmail.com';
+export const AUTHORIZED_OWNER_EMAIL = 'vetriwatersolution@gmail.com';
 
 /**
  * Allowed Tank Cleaning Types (DEC-08 & DEC-25).
