@@ -123,6 +123,7 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
     return {
       status: 'COMMITTED',
       siteId: committed.committedServerDocId,
+      sequenceNumber: committed.committedSequenceNumber || null,
       version: committed.committedVersion,
       serverCommittedAt: committed.serverCommittedAt
     };
@@ -231,6 +232,7 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
     transaction.update(opRef, {
       status: 'COMMITTED',
       committedServerDocId: siteId,
+      committedSequenceNumber: allocatedSequence,
       committedVersion: 1,
       serverCommittedAt: backendNow,
       updatedAt: backendNow

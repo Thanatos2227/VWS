@@ -20,6 +20,11 @@ import {
   connectFirestoreEmulator,
   Firestore 
 } from 'firebase/firestore';
+import { 
+  getFunctions, 
+  connectFunctionsEmulator, 
+  Functions 
+} from 'firebase/functions';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyMockKeyForDevPhase02LocalInitOnly',
@@ -54,12 +59,16 @@ try {
 }
 export const db: Firestore = dbInstance;
 
+// Functions Instance (Region asia-south1 per DOC-004)
+export const functions: Functions = getFunctions(app, 'asia-south1');
+
 // Optional Emulator Hooks for local integration testing (DOC-006 §7 / VER-10)
 const emulatorHost = import.meta.env.VITE_FIREBASE_EMULATOR_HOST;
 if (emulatorHost && !import.meta.env.PROD) {
   try {
     connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
     connectFirestoreEmulator(db, emulatorHost, 8080);
+    connectFunctionsEmulator(functions, emulatorHost, 5001);
     console.info(`[VWS Firebase] Connected to Local Emulator Suite at ${emulatorHost}`);
   } catch {
     // Emulator already connected

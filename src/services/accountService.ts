@@ -4,7 +4,12 @@
  * Daily Accounts & Expense Management Service.
  * Implements Official vs Personal ledger split, attendance combined wages+tea+bata,
  * staff salary modes, auto-calculated totals, and immutable audit logging.
- * Complies with DOC-002 (§2.4), DOC-005 (§3.2), and DEC-01 through DEC-25.
+ * Complies with DOC-002 (§2.4), DOC-005 (§3.2), DOC-006 (§4), and DEC-01 through DEC-25.
+ * 
+ * ARCHITECTURE INTEGRITY:
+ * Protected mutations route exclusively through authenticated Cloud Functions callables
+ * (commitDailyAccountsUpdate). Direct client writes are strictly prohibited to comply with
+ * canonical firestore.rules.
  */
 
 import { 
@@ -16,49 +21,56 @@ import {
   where, 
   orderBy, 
   onSnapshot, 
-  Timestamp,
-  runTransaction
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { DailyAccountsRecord, AuditLogEntry, ExpenseItem } from '../types/database';
 import { toPaise } from '../utils/money';
+import { 
+  callCommitDailyAccountsUpdate, 
+  generateOperationIdempotencyKey, 
+  getClientDeviceId 
+} from './api/callableClient';
+import { 
+  adaptAccountsFormToPayload,
+  OfficialExpenseFormInput,
+  PersonalExpenseFormInput
+} from './adapters/financialAdapter';
 
 const ACCOUNTS_COLLECTION = 'accounts_daily';
 
-export interface OfficialExpenseFormData {
-  refreshment: number;
-  transport: number;
-  sparesHO: number;
-  staffAttendanceCount: number;
-  staffAttendanceExpense: number; // Combined Wages + Tea + Refreshments + Bata
-  staffSalary: number;
-  salaryEntries?: ExpenseItem[];
-  notes?: string;
-}
-
-export interface PersonalExpenseFormData {
-  transport: number;
-  refreshment: number;
-  groceriesVegMilk: number;
-  lunchDinner: number;
-  other: number;
-  notes?: string;
-}
+export type OfficialExpenseFormData = OfficialExpenseFormInput;
+export type PersonalExpenseFormData = PersonalExpenseFormInput;
 
 /**
  * Saves or updates a daily account record for a given date (YYYY-MM-DD).
- * Atomically recalculates category totals and appends an audit log if modified.
+ * Routes mutation through authenticated commitDailyAccountsUpdate Cloud Function.
  */
 export async function saveDailyAccounts(
   entryDate: string,
   official: OfficialExpenseFormData,
   personal: PersonalExpenseFormData,
-  editorEmail: string,
+  _editorEmail: string,
   auditReason?: string
 ): Promise<DailyAccountsRecord> {
+  const clientDeviceId = getClientDeviceId();
+  const idempotencyKey = generateOperationIdempotencyKey('ACCOUNTS', entryDate.replace(/-/g, ''));
+
+  // Adapt form data to typed callable payload
+  const payload = adaptAccountsFormToPayload(
+    entryDate,
+    official,
+    personal,
+    idempotencyKey,
+    clientDeviceId,
+    auditReason
+  );
+
+  // Invoke authenticated 2nd Gen Cloud Function
+  const commitResult = await callCommitDailyAccountsUpdate(payload);
+
   const calendarYear = parseInt(entryDate.slice(0, 4), 10) || new Date().getFullYear();
   const now = Timestamp.now();
-  const docRef = doc(db, ACCOUNTS_COLLECTION, entryDate);
 
   const officialPaise = {
     refreshmentPaise: toPaise(official.refreshment),
@@ -67,8 +79,9 @@ export async function saveDailyAccounts(
     staffAttendanceCount: Math.max(0, Math.floor(official.staffAttendanceCount || 0)),
     staffAttendanceExpensePaise: toPaise(official.staffAttendanceExpense),
     staffSalaryPaise: toPaise(official.staffSalary),
-    salaryEntries: official.salaryEntries || [],
-    notes: official.notes?.trim() || undefined
+    salaryEntries: (official.salaryEntries as ExpenseItem[] | undefined) || [],
+    notes: official.notes?.trim() || undefined,
+    totalOfficialPaise: commitResult.totals.totalOfficialPaise
   };
 
   const personalPaise = {
@@ -77,84 +90,28 @@ export async function saveDailyAccounts(
     groceriesVegMilkPaise: toPaise(personal.groceriesVegMilk),
     lunchDinnerPaise: toPaise(personal.lunchDinner),
     otherPaise: toPaise(personal.other),
-    notes: personal.notes?.trim() || undefined
+    notes: personal.notes?.trim() || undefined,
+    totalPersonalPaise: commitResult.totals.totalPersonalPaise
   };
 
-  const totalOfficialPaise = 
-    officialPaise.refreshmentPaise + 
-    officialPaise.transportPaise + 
-    officialPaise.sparesHOPaise + 
-    officialPaise.staffAttendanceExpensePaise + 
-    officialPaise.staffSalaryPaise;
+  const updatedRecord: DailyAccountsRecord = {
+    entryDate,
+    calendarYear,
+    official: officialPaise,
+    personal: personalPaise,
+    dailyGrandTotalPaise: commitResult.totals.dailyGrandTotalPaise,
+    revisionsCount: commitResult.revisionsCount,
+    isDeleted: false,
+    createdAt: now,
+    updatedAt: now
+  };
 
-  const totalPersonalPaise = 
-    personalPaise.transportPaise + 
-    personalPaise.refreshmentPaise + 
-    personalPaise.groceriesVegMilkPaise + 
-    personalPaise.lunchDinnerPaise + 
-    personalPaise.otherPaise;
-
-  const dailyGrandTotalPaise = totalOfficialPaise + totalPersonalPaise;
-
-  let updatedRecord: DailyAccountsRecord;
-
-  await runTransaction(db, async (transaction) => {
-    const existingSnap = await transaction.get(docRef);
-    let revisionsCount = 0;
-    let createdAt: Timestamp = now;
-
-    if (existingSnap.exists()) {
-      const existing = existingSnap.data() as DailyAccountsRecord;
-      revisionsCount = (existing.revisionsCount || 0) + 1;
-      createdAt = (existing.createdAt as Timestamp) || now;
-
-      // Append revision audit log
-      const auditLogRef = doc(collection(db, ACCOUNTS_COLLECTION, entryDate, 'audit_log'));
-      const auditEntry: AuditLogEntry = {
-        revisionId: auditLogRef.id,
-        timestamp: now,
-        modifiedBy: editorEmail,
-        previousTotals: {
-          officialPaise: existing.official.totalOfficialPaise,
-          personalPaise: existing.personal.totalPersonalPaise,
-          grandTotalPaise: existing.dailyGrandTotalPaise
-        },
-        newTotals: {
-          officialPaise: totalOfficialPaise,
-          personalPaise: totalPersonalPaise,
-          grandTotalPaise: dailyGrandTotalPaise
-        },
-        reason: auditReason?.trim() || 'Daily expense updated'
-      };
-      transaction.set(auditLogRef, auditEntry);
-    }
-
-    updatedRecord = {
-      entryDate,
-      calendarYear,
-      official: {
-        ...officialPaise,
-        totalOfficialPaise
-      },
-      personal: {
-        ...personalPaise,
-        totalPersonalPaise
-      },
-      dailyGrandTotalPaise,
-      revisionsCount,
-      isDeleted: false,
-      createdAt,
-      updatedAt: now
-    };
-
-    transaction.set(docRef, updatedRecord);
-  });
-
-  return updatedRecord!;
+  return updatedRecord;
 }
 
 /**
  * Subscribes in real-time to all daily account records for a given calendar year.
+ * Authorized under firestore.rules (allow read: if isOwner();).
  */
 export function subscribeDailyAccountsForYear(
   calendarYear: number,
@@ -183,6 +140,7 @@ export function subscribeDailyAccountsForYear(
 
 /**
  * Fetches the daily account record for a specific date.
+ * Authorized under firestore.rules (allow read: if isOwner();).
  */
 export async function getDailyAccountForDate(entryDate: string): Promise<DailyAccountsRecord | null> {
   const docRef = doc(db, ACCOUNTS_COLLECTION, entryDate);
@@ -193,6 +151,7 @@ export async function getDailyAccountForDate(entryDate: string): Promise<DailyAc
 
 /**
  * Fetches the audit log history for a specific daily account date.
+ * Authorized under firestore.rules (allow read: if isOwner();).
  */
 export async function getDailyAccountAuditLog(entryDate: string): Promise<AuditLogEntry[]> {
   const q = query(

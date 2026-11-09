@@ -22,6 +22,12 @@ export interface CommitDailyAccountsPayload {
     staffAttendanceCount: number;
     staffAttendanceExpensePaise: number;
     staffSalaryPaise: number;
+    salaryEntries?: Array<{
+      id: string;
+      staffName: string;
+      amountPaise: number;
+      notes?: string;
+    }>;
     notes?: string;
   };
   personal: {

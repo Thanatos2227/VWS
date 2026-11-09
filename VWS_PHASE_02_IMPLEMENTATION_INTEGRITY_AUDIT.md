@@ -321,3 +321,4 @@ To resolve the primary blocker safely without altering any owner decisions or re
    - Introduce `src/services/adapters/financialAdapter.ts` to isolate `rupees` (UI) from `paise` (database) so REC-04 can be accepted or rejected seamlessly by the owner.
 4. **Mount `SyncConflictModal.tsx`:**
    - Bind the conflict modal to global state in `AppLayout.tsx` so version mismatches trigger the side-by-side review UI as specified in SCR-11.
+

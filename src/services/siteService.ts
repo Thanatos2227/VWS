@@ -4,50 +4,48 @@
  * Customer Site Details Management Service.
  * Implements non-destructive correction chains (v1 -> v2 -> v3), 
  * soft-deletion with 30-day recycle bin, reactive totals, and Firestore integration.
- * Complies with DOC-002 (§2.3), DOC-005 (§3.1), and DEC-01 through DEC-25.
+ * Complies with DOC-002 (§2.3), DOC-005 (§3.1), DOC-006 (§4), and DEC-01 through DEC-25.
+ * 
+ * ARCHITECTURE INTEGRITY:
+ * Protected mutations route exclusively through authenticated Cloud Functions callables
+ * (commitSiteJob, commitSiteCorrection, commitSiteStatusChange). Direct client writes
+ * are strictly prohibited to comply with canonical firestore.rules.
  */
 
 import { 
   collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
   getDocs, 
   query, 
   where, 
   orderBy, 
   onSnapshot, 
-  Timestamp,
-  runTransaction
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { SiteRecord, TankCleaningDetail } from '../types/database';
 import { calculateTankCapacityLitres } from '../utils/tank';
 import { calculateFinalValue, toPaise } from '../utils/money';
+import { 
+  callCommitSiteJob, 
+  callCommitSiteCorrection, 
+  callCommitSiteStatusChange, 
+  callPurgeExpiredSites,
+  generateOperationIdempotencyKey, 
+  getClientDeviceId 
+} from './api/callableClient';
+import { 
+  adaptSiteFormToJobPayload, 
+  adaptSiteFormToCorrectionPayload,
+  SiteFormInput 
+} from './adapters/financialAdapter';
 
 const SITES_COLLECTION = 'sites';
 
-export interface SiteFormData {
-  workDate: string; // YYYY-MM-DD
-  customerName: string;
-  location: string;
-  contactNumber: string;
-  googleLocation?: string;
-  billNumber: string; // Physical bill book number (DEC-10)
-  paymentMode: 'Cash' | 'Online'; // Mandatory selection (DEC-11)
-  billValue: number; // In Rupees (DEC-07)
-  discount: number; // In Rupees (DEC-07)
-  tanks: Array<{
-    tankType: 'OHT' | 'UG';
-    length: number;
-    breadth: number;
-    height: number;
-  }>;
-  correctionReason?: string;
-}
+export type SiteFormData = SiteFormInput;
 
 /**
  * Creates a brand-new customer site entry (Version 1).
+ * Routes mutation through authenticated commitSiteJob Cloud Function.
  */
 export async function createSiteEntry(
   data: SiteFormData, 
@@ -60,7 +58,16 @@ export async function createSiteEntry(
   if (!data.contactNumber?.trim()) throw new Error('Contact number is required.');
   if (!data.billNumber?.trim()) throw new Error('Physical bill number is required.');
   if (!data.paymentMode) throw new Error('Payment mode (Cash or Online) is mandatory.');
-  if (data.tanks.length === 0) throw new Error('At least one tank entry is required.');
+  if (!data.tanks || data.tanks.length === 0) throw new Error('At least one tank entry is required.');
+
+  const clientDeviceId = getClientDeviceId();
+  const idempotencyKey = generateOperationIdempotencyKey('SITE_CREATE', data.billNumber);
+
+  // Adapt form data to typed callable payload
+  const payload = adaptSiteFormToJobPayload(data, idempotencyKey, clientDeviceId);
+
+  // Invoke authenticated 2nd Gen Cloud Function
+  const commitResult = await callCommitSiteJob(payload);
 
   const calendarYear = parseInt(data.workDate.slice(0, 4), 10) || new Date().getFullYear();
   const billValuePaise = toPaise(data.billValue);
@@ -76,13 +83,13 @@ export async function createSiteEntry(
     capacityLitres: calculateTankCapacityLitres({ length: t.length, breadth: t.breadth, height: t.height })
   }));
 
-  const siteId = `site_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const now = Timestamp.now();
+  const allocatedSeq = commitResult.sequenceNumber || 1;
 
-  const newRecord: SiteRecord = {
-    id: siteId,
-    sequenceNumber: 0,
-    siteNumber: 0, // Server sequence is assigned during cloud commit; client-side default 0
+  const committedRecord: SiteRecord = {
+    id: commitResult.siteId,
+    sequenceNumber: allocatedSeq,
+    siteNumber: allocatedSeq,
     year: calendarYear,
     calendarYear,
     workDate: data.workDate,
@@ -98,7 +105,7 @@ export async function createSiteEntry(
     discountPaise,
     finalValuePaise,
     version: 1,
-    originalRecordId: siteId,
+    originalRecordId: commitResult.siteId,
     previousRecordId: null,
     isLatestValidVersion: true,
     status: 'ACTIVE',
@@ -113,20 +120,34 @@ export async function createSiteEntry(
     createdBy: creatorEmail
   };
 
-  const docRef = doc(db, SITES_COLLECTION, siteId);
-  await setDoc(docRef, newRecord);
-  return newRecord;
+  return committedRecord;
 }
 
 /**
  * Creates an immutable correction record (v2, v3, etc.) for an existing site.
- * Preserves the previous version with status='SUPERSEDED' and isLatestValidVersion=false.
+ * Routes mutation through authenticated commitSiteCorrection Cloud Function.
  */
 export async function createSiteCorrection(
   previousRecord: SiteRecord,
   updatedData: SiteFormData,
   editorEmail: string
 ): Promise<SiteRecord> {
+  const clientDeviceId = getClientDeviceId();
+  const idempotencyKey = generateOperationIdempotencyKey(
+    'SITE_CORRECT', 
+    `${previousRecord.id}_v${previousRecord.version + 1}`
+  );
+
+  const payload = adaptSiteFormToCorrectionPayload(
+    previousRecord.id,
+    previousRecord.version,
+    updatedData,
+    idempotencyKey,
+    clientDeviceId
+  );
+
+  const commitResult = await callCommitSiteCorrection(payload);
+
   const calendarYear = parseInt(updatedData.workDate.slice(0, 4), 10) || previousRecord.year || new Date().getFullYear();
   const billValuePaise = toPaise(updatedData.billValue);
   const discountPaise = toPaise(updatedData.discount || 0);
@@ -141,13 +162,12 @@ export async function createSiteCorrection(
     capacityLitres: calculateTankCapacityLitres({ length: t.length, breadth: t.breadth, height: t.height })
   }));
 
-  const correctionId = `site_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const now = Timestamp.now();
-  const nextVersion = previousRecord.version + 1;
+  const nextVersion = commitResult.version;
   const originalRecordId = previousRecord.originalRecordId || previousRecord.id;
 
   const newCorrectionRecord: SiteRecord = {
-    id: correctionId,
+    id: commitResult.siteId,
     sequenceNumber: previousRecord.sequenceNumber || 0,
     siteNumber: previousRecord.sequenceNumber || previousRecord.siteNumber || 0,
     year: calendarYear,
@@ -180,61 +200,57 @@ export async function createSiteCorrection(
     createdBy: editorEmail || previousRecord.createdBy
   };
 
-  // Run atomic transaction to supersede previous version and insert new correction
-  await runTransaction(db, async (transaction) => {
-    const prevDocRef = doc(db, SITES_COLLECTION, previousRecord.id);
-    const newDocRef = doc(db, SITES_COLLECTION, correctionId);
-
-    transaction.update(prevDocRef, {
-      isLatestValidVersion: false,
-      status: 'SUPERSEDED',
-      updatedAt: now
-    });
-
-    transaction.set(newDocRef, newCorrectionRecord);
-  });
-
   return newCorrectionRecord;
 }
 
 /**
- * Soft-deletes a site record, sending it to the 30-day Recycle Bin.
+ * Soft-deletes a site record, moving it to the 30-day Recycle Bin.
+ * Routes mutation through authenticated commitSiteStatusChange Cloud Function.
  */
-export async function softDeleteSite(siteId: string, userEmail: string): Promise<void> {
-  const docRef = doc(db, SITES_COLLECTION, siteId);
-  const now = Timestamp.now();
-  // 30 days retention = 30 * 24 * 60 * 60 seconds = 2,592,000 seconds
-  const purgeSeconds = now.seconds + 30 * 24 * 60 * 60;
-  const expiresForPurgeAt = new Timestamp(purgeSeconds, now.nanoseconds);
+export async function softDeleteSite(siteId: string, _userEmail: string): Promise<void> {
+  const clientDeviceId = getClientDeviceId();
+  const idempotencyKey = generateOperationIdempotencyKey('SITE_SOFTDEL', siteId);
 
-  await updateDoc(docRef, {
-    isDeleted: true,
-    deletedAt: now,
-    deletedBy: userEmail,
-    expiresForPurgeAt,
-    updatedAt: now
+  await callCommitSiteStatusChange({
+    idempotencyKey,
+    clientDeviceId,
+    siteId,
+    action: 'SOFT_DELETE'
   });
 }
 
 /**
  * Restores a soft-deleted site record back to active status.
+ * Routes mutation through authenticated commitSiteStatusChange Cloud Function.
  */
 export async function restoreSite(siteId: string): Promise<void> {
-  const docRef = doc(db, SITES_COLLECTION, siteId);
-  const now = Timestamp.now();
+  const clientDeviceId = getClientDeviceId();
+  const idempotencyKey = generateOperationIdempotencyKey('SITE_RESTORE', siteId);
 
-  await updateDoc(docRef, {
-    isDeleted: false,
-    deletedAt: null,
-    deletedBy: null,
-    expiresForPurgeAt: null,
-    updatedAt: now
+  await callCommitSiteStatusChange({
+    idempotencyKey,
+    clientDeviceId,
+    siteId,
+    action: 'RESTORE'
   });
+}
+
+/**
+ * Permanently purges site records that have resided in the 30-day Recycle Bin past expiresForPurgeAt.
+ * Routes through authenticated purgeExpiredSites Cloud Function.
+ */
+export async function purgeExpiredSitesList(): Promise<{ purgedCount: number; purgedSiteIds: string[] }> {
+  const result = await callPurgeExpiredSites();
+  return {
+    purgedCount: result.purgedCount,
+    purgedSiteIds: result.purgedSiteIds
+  };
 }
 
 /**
  * Subscribes in real-time to active sites for a given calendar year.
  * Only returns latest valid versions (excluding superseded versions and soft-deleted records).
+ * Authorized under firestore.rules (allow read: if isOwner();).
  */
 export function subscribeActiveSites(
   calendarYear: number, 
@@ -263,7 +279,8 @@ export function subscribeActiveSites(
 }
 
 /**
- * Subscribes to the 30-day Recycle Bin.
+ * Subscribes in real-time to the 30-day Recycle Bin.
+ * Authorized under firestore.rules (allow read: if isOwner();).
  */
 export function subscribeRecycleBin(
   callback: (sites: SiteRecord[]) => void,
@@ -290,6 +307,7 @@ export function subscribeRecycleBin(
 
 /**
  * Fetches the complete version history chain for a site (v1 -> v2 -> v3).
+ * Authorized under firestore.rules (allow read: if isOwner();).
  */
 export async function getSiteVersionHistory(originalRecordId: string): Promise<SiteRecord[]> {
   const q = query(
