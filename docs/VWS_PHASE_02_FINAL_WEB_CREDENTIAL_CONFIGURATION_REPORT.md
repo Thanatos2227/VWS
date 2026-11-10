@@ -169,3 +169,4 @@ Documented `VITE_FIREBASE_MEASUREMENT_ID` in the template for future environment
    - `REC-10`: Cloud KMS / Secret Manager backup token secret.
    - `POQ-01`: Google Cloud IAM owner authorization verification.
    All remain **PENDING** until explicit user authorization.
+
