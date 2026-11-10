@@ -4,4 +4,5 @@
     <string name="title_activity_main">Vetri Water Solutions</string>
     <string name="package_name">com.vetri.watersolutions</string>
     <string name="custom_url_scheme">com.vetri.watersolutions</string>
+    <string name="server_client_id">820277889521-3cojmn8vtjuo53ocp581mtpgssej2cq5.apps.googleusercontent.com</string>
 </resources>

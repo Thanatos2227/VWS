@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "820277889521",
+    "project_id": "vws-s-8bef5",
+    "storage_bucket": "vws-s-8bef5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:820277889521:android:bc4fc83197a70d98885c50",
+        "android_client_info": {
+          "package_name": "com.vetri.watersolutions"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "820277889521-8ivntgrccu31eu6kltl9k64kibvulucm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vetri.watersolutions",
+            "certificate_hash": "de0d41fed94d4c1cfff602840744dde9a4b2b995"
+          }
+        },
+        {
+          "client_id": "820277889521-3cojmn8vtjuo53ocp581mtpgssej2cq5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMRCgifY0vR-JUCY5ial9EhdnDWoC2oVA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "820277889521-3cojmn8vtjuo53ocp581mtpgssej2cq5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
