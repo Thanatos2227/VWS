@@ -77,7 +77,7 @@ export const scheduledDailyBackup = onSchedule(
       let driveClient: any = null;
       try {
         const secretClient = new SecretManagerServiceClient();
-        const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || 'vetri-water-solutions';
+        const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || 'vws-s-8bef5';
         const secretPath = `projects/${projectId}/secrets/${SECRET_NAME}/versions/latest`;
         const [version] = await secretClient.accessSecretVersion({ name: secretPath });
         const refreshToken = version.payload?.data?.toString();

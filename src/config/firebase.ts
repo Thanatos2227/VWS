@@ -36,11 +36,11 @@ if (!configuredApiKey && !isDevOrTest) {
 
 const firebaseConfig = {
   apiKey: configuredApiKey || 'AIzaSyMockKeyForDevPhase02LocalInitOnly',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vetri-water-solutions.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vetri-water-solutions',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vetri-water-solutions.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '108253164729',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:108253164729:web:mockappid000000000000'
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vws-s-8bef5.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vws-s-8bef5',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vws-s-8bef5.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
 };
 
 // Singleton App Instance

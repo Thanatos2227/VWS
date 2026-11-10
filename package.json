@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:emulator": "vitest run tests/integration/emulatorIntegration.test.ts --testTimeout=60000",
-    "emulator:exec": "firebase emulators:exec --only firestore,auth,functions --project vetri-water-solutions \"npm run test:emulator\"",
+    "emulator:exec": "firebase emulators:exec --only firestore,auth,functions --project vws-s-8bef5 \"npm run test:emulator\"",
     "build:rules": "node scripts/build-rules.mjs"
   },
   "dependencies": {
