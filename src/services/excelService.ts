@@ -1,12 +1,3 @@
-/**
- * src/services/excelService.ts
- * 
- * Client-Side Excel Workbook Generation Service using ExcelJS.
- * Implements strict compliance with DOC-007 (VWS_EXCEL_EXPORT_SPECIFICATION).
- * Generates partitioned annual sheets: '[YEAR] - Site Details' and '[YEAR] - Accounts'.
- * Implements Section 6.4: populates both dynamic Excel formulas and verified pre-calculated
- * results so all viewers observe accurate financial totals immediately upon opening.
- */
 
 import ExcelJS from 'exceljs';
 import { SiteRecord, DailyAccountsRecord } from '../types/database';
@@ -19,9 +10,6 @@ export interface ExcelExportData {
   accountsByYear: Record<number, DailyAccountsRecord[]>;
 }
 
-/**
- * Builds the complete multi-year authoritative Excel workbook in-memory.
- */
 export async function buildMasterWorkbook(data: ExcelExportData): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Vetri Water Solutions';
@@ -35,19 +23,14 @@ export async function buildMasterWorkbook(data: ExcelExportData): Promise<ExcelJ
     const sites = data.sitesByYear[year] || [];
     const accounts = data.accountsByYear[year] || [];
 
-    // 1. Create [YEAR] - Site Details Sheet
     buildSiteDetailsSheet(workbook, year, sites);
 
-    // 2. Create [YEAR] - Accounts Sheet
     buildAccountsSheet(workbook, year, accounts);
   }
 
   return workbook;
 }
 
-/**
- * Builds a single [YEAR] - Site Details worksheet.
- */
 function buildSiteDetailsSheet(
   workbook: ExcelJS.Workbook,
   year: number,
@@ -58,7 +41,6 @@ function buildSiteDetailsSheet(
     views: [{ state: 'frozen', ySplit: 2 }]
   });
 
-  // Sheet Title Header
   sheet.mergeCells('A1:P1');
   const titleCell = sheet.getCell('A1');
   titleCell.value = `VETRI WATER SOLUTIONS — CUSTOMER SITES & BILLING LEDGER (${year})`;
@@ -67,7 +49,6 @@ function buildSiteDetailsSheet(
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
   sheet.getRow(1).height = 30;
 
-  // Column Headers (Row 2)
   const headers = [
     'S.No', 'Date', 'Customer Name', 'Location', 'Contact Number',
     'Google Maps Location', 'Total Tanks', 'Tank Types', 'Measurements (L*B*H ft)',
@@ -89,7 +70,6 @@ function buildSiteDetailsSheet(
     };
   });
 
-  // Sort sites: chronological order by workDate asc, version asc
   const sortedSites = [...sites].sort((a, b) => {
     const dComp = a.workDate.localeCompare(b.workDate);
     if (dComp !== 0) return dComp;
@@ -155,7 +135,6 @@ function buildSiteDetailsSheet(
       statusDisplay
     ];
 
-    // Format financial cells
     [11, 12, 13].forEach((colIdx) => {
       const cell = row.getCell(colIdx);
       cell.numFmt = '₹ #,##0.00';
@@ -164,7 +143,6 @@ function buildSiteDetailsSheet(
     row.alignment = { vertical: 'middle', wrapText: true };
     row.height = Math.max(22, s.tanks.length * 18);
 
-    // Apply soft gray fill and strikethrough for superseded or deleted rows (PD-05)
     if (isSuperseded || isDeleted) {
       row.eachCell((cell, colNum) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
@@ -179,7 +157,6 @@ function buildSiteDetailsSheet(
     currentRow++;
   }
 
-  // Summary Row with Formulas & Pre-Calculated Results (Section 6.4)
   if (sortedSites.length > 0) {
     const summaryRow = sheet.getRow(currentRow);
     summaryRow.values = [
@@ -199,30 +176,26 @@ function buildSiteDetailsSheet(
     });
   }
 
-  // Column Widths
   sheet.columns = [
-    { width: 8 },  // S.No
-    { width: 12 }, // Date
-    { width: 22 }, // Customer Name
-    { width: 20 }, // Location
-    { width: 16 }, // Contact
-    { width: 24 }, // Google Maps
-    { width: 10 }, // Tanks
-    { width: 12 }, // Tank Type
-    { width: 20 }, // Dimensions
-    { width: 16 }, // Capacity
-    { width: 16 }, // Bill
-    { width: 14 }, // Discount
-    { width: 16 }, // Final
-    { width: 14 }, // Bill No
-    { width: 14 }, // Payment Mode
-    { width: 18 }  // Status
+    { width: 8 },
+    { width: 12 },
+    { width: 22 },
+    { width: 20 },
+    { width: 16 },
+    { width: 24 },
+    { width: 10 },
+    { width: 12 },
+    { width: 20 },
+    { width: 16 },
+    { width: 16 },
+    { width: 14 },
+    { width: 16 },
+    { width: 14 },
+    { width: 14 },
+    { width: 18 }
   ];
 }
 
-/**
- * Builds a single [YEAR] - Accounts worksheet.
- */
 function buildAccountsSheet(
   workbook: ExcelJS.Workbook,
   year: number,
@@ -233,7 +206,6 @@ function buildAccountsSheet(
     views: [{ state: 'frozen', ySplit: 2 }]
   });
 
-  // Top Merged Category Headers (Row 1)
   sheet.mergeCells('A1:H1');
   const offHeader = sheet.getCell('A1');
   offHeader.value = `OFFICIAL EXPENSES (${year})`;
@@ -258,11 +230,10 @@ function buildAccountsSheet(
 
   sheet.getRow(1).height = 28;
 
-  // Subheaders (Row 2)
   const subHeaders = [
     'Date', 'Refreshment (₹)', 'Transport (₹)', 'Spares/HO (₹)', 'Staff Count',
     'Attendance (Wages+Tea+Bata) (₹)', 'Staff Salary (₹)', 'Total Official (₹)',
-    '', // Spacer
+    '',
     'Transport (₹)', 'Refreshment (₹)', 'Groceries/Veg/Milk (₹)',
     'Lunch/Dinner (₹)', 'Other (₹)', 'Total Personal (₹)',
     'Daily Grand Total (₹)'
@@ -283,7 +254,6 @@ function buildAccountsSheet(
     }
   });
 
-  // Sort chronologically by entryDate asc
   const sortedAccounts = [...accounts].sort((a, b) => a.entryDate.localeCompare(b.entryDate));
 
   let currentRow = 3;
@@ -323,7 +293,6 @@ function buildAccountsSheet(
       { formula: `H${currentRow} + O${currentRow}`, result: dailyGrand }
     ];
 
-    // Format currencies
     [2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16].forEach((colIdx) => {
       row.getCell(colIdx).numFmt = '₹ #,##0.00';
     });
@@ -333,7 +302,6 @@ function buildAccountsSheet(
     currentRow++;
   }
 
-  // Annual Totals Row with Formulas & Pre-Calculated Results (Section 6.4)
   if (sortedAccounts.length > 0) {
     const totalRow = sheet.getRow(currentRow);
     totalRow.values = [
@@ -364,30 +332,26 @@ function buildAccountsSheet(
     });
   }
 
-  // Column Widths
   sheet.columns = [
-    { width: 12 }, // Date
-    { width: 14 }, // Off Ref
-    { width: 14 }, // Off Trans
-    { width: 14 }, // Off Spares
-    { width: 12 }, // Staff Count
-    { width: 18 }, // Staff Att
-    { width: 14 }, // Staff Sal
-    { width: 16 }, // Off Total
-    { width: 4 },  // Spacer
-    { width: 14 }, // Pers Trans
-    { width: 14 }, // Pers Ref
-    { width: 18 }, // Pers Groc
-    { width: 14 }, // Pers Lunch
-    { width: 14 }, // Pers Other
-    { width: 16 }, // Pers Total
-    { width: 18 }  // Grand Total
+    { width: 12 },
+    { width: 14 },
+    { width: 14 },
+    { width: 14 },
+    { width: 12 },
+    { width: 18 },
+    { width: 14 },
+    { width: 16 },
+    { width: 4 },
+    { width: 14 },
+    { width: 14 },
+    { width: 18 },
+    { width: 14 },
+    { width: 14 },
+    { width: 16 },
+    { width: 18 }
   ];
 }
 
-/**
- * Downloads the master workbook as an Excel (.xlsx) file in the user's browser or native device storage.
- */
 export async function downloadExcelWorkbook(data: ExcelExportData): Promise<void> {
   const workbook = await buildMasterWorkbook(data);
   const buffer = await workbook.xlsx.writeBuffer();

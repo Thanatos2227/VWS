@@ -1,10 +1,3 @@
-/**
- * src/components/auth/OwnerAuthGuard.tsx
- * 
- * Single-Owner Gatekeeper Component (SCR-01).
- * Enforces DEC-02 and DOC-006: strictly guards the application and only admits
- * authenticated owner vetriwatersolution@gmail.com.
- */
 
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -49,7 +42,6 @@ export const OwnerAuthGuard: React.FC<OwnerAuthGuardProps> = ({ children }) => {
     );
   }
 
-  // Unauthorized Attempt Screen (DOC-002 §2.1.2 Step 3)
   if (unauthorizedAttemptEmail) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
@@ -77,12 +69,10 @@ export const OwnerAuthGuard: React.FC<OwnerAuthGuardProps> = ({ children }) => {
     );
   }
 
-  // Unauthenticated Sign-In Screen (SCR-01)
   if (!currentUser || !isOwner) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-sky-50 via-slate-50 to-slate-100 p-4">
         <div className="w-full max-w-sm bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xl text-center">
-          {/* Logo Brand Header */}
           <div className="w-16 h-16 bg-gradient-to-tr from-sky-600 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-sky-500/25">
             <Droplets className="w-9 h-9 text-white" />
           </div>

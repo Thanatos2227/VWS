@@ -1,9 +1,3 @@
-/**
- * tests/unit/components.test.tsx
- * 
- * Component unit tests for Vetri Water Solutions.
- * Tests Single-Owner Guard (SCR-01), Site Entry Modal (SCR-04), and Dashboard (SCR-02).
- */
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -135,13 +129,11 @@ describe('SiteEntryModal Form (SCR-04, DEC-08, DEC-10, DEC-11, DEC-25)', () => {
       />
     );
 
-    // OHT and UG buttons exist
     const ohtBtn = screen.getByRole('button', { name: /OHT \(Overhead\)/i });
     const ugBtn = screen.getByRole('button', { name: /UG \(Underground\)/i });
     expect(ohtBtn).toBeInTheDocument();
     expect(ugBtn).toBeInTheDocument();
 
-    // No free-text or custom tank type input exists
     expect(screen.queryByPlaceholderText(/custom tank/i)).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/other/i)).not.toBeInTheDocument();
   });
@@ -183,7 +175,7 @@ describe('DashboardScreen (SCR-02)', () => {
         version: 1,
         originalRecordId: 's1_v1',
         status: 'SUPERSEDED',
-        isLatestValidVersion: false, // Superseded, should NOT be counted
+        isLatestValidVersion: false,
         isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -200,13 +192,13 @@ describe('DashboardScreen (SCR-02)', () => {
         paymentMode: 'Cash',
         totalTanks: 1,
         tanks: [{ tankType: 'OHT', length: 10, breadth: 10, height: 10, capacityLitres: 28317 }],
-        billValuePaise: 400000, // ₹ 4,000.00
-        discountPaise: 50000,  // ₹ 500.00
-        finalValuePaise: 350000,// ₹ 3,500.00
+        billValuePaise: 400000,
+        discountPaise: 50000,
+        finalValuePaise: 350000,
         version: 2,
         originalRecordId: 's1_v1',
         status: 'ACTIVE',
-        isLatestValidVersion: true, // Active, MUST be counted
+        isLatestValidVersion: true,
         isDeleted: false,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -225,13 +217,9 @@ describe('DashboardScreen (SCR-02)', () => {
       />
     );
 
-    // Active sites count must be 1, not 2
     expect(screen.getByText('1')).toBeInTheDocument();
-    // Gross bill should be ₹ 4,000.00
     expect(screen.getByText(formatIndianRupees(4000))).toBeInTheDocument();
-    // Discount should be ₹ 500.00
     expect(screen.getByText(formatIndianRupees(500))).toBeInTheDocument();
-    // Net billing should be ₹ 3,500.00 (appears in Net Billing card, Net Margin, and recent table)
     expect(screen.getAllByText(formatIndianRupees(3500)).length).toBeGreaterThanOrEqual(1);
   });
 });

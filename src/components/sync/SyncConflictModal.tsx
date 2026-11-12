@@ -1,11 +1,3 @@
-/**
- * src/components/sync/SyncConflictModal.tsx
- * 
- * Offline Concurrency Conflict Review Modal (SCR-11).
- * Displays side-by-side comparison between local offline drafts and server records
- * when an optimistic concurrency version collision is detected upon reconnection.
- * Complies with DOC-002 (§3, SCR-11) and REC-10.
- */
 
 import React from 'react';
 import { SiteRecord } from '../../types/database';
@@ -53,7 +45,6 @@ export const SyncConflictModal: React.FC<ConflictReviewProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200">
         
-        {/* Header */}
         <div className="px-6 py-4 bg-amber-50/60 border-b border-amber-100 flex items-center justify-between rounded-t-3xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
@@ -76,11 +67,9 @@ export const SyncConflictModal: React.FC<ConflictReviewProps> = ({
           </button>
         </div>
 
-        {/* Side-by-Side Comparison Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            {/* Left: Server Version */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                 <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -127,7 +116,6 @@ export const SyncConflictModal: React.FC<ConflictReviewProps> = ({
               </div>
             </div>
 
-            {/* Right: Local Offline Draft */}
             <div className="p-4 bg-amber-50/40 border border-amber-200 rounded-2xl space-y-3">
               <div className="flex items-center justify-between border-b border-amber-200 pb-2">
                 <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
@@ -185,7 +173,6 @@ export const SyncConflictModal: React.FC<ConflictReviewProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={onDiscardDraft}

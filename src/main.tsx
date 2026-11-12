@@ -1,8 +1,3 @@
-/**
- * src/main.tsx
- * 
- * Application entry point for Vetri Water Solutions.
- */
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

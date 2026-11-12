@@ -2,77 +2,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global Helper: Check if request is authenticated
     function isAuthenticated() {
       return request.auth != null && request.auth.uid != null;
     }
 
-    // Global Helper: Check if authenticated user is the designated business owner.
-    //
-    // Owner Identity Configuration Architecture:
-    // Cloud Firestore Security Rules execute in a managed Google sandbox without access to
-    // runtime OS environment variables (process.env). The single authoritative source file
-    // is firestore.rules.template (using placeholder "__VWS_OWNER_EMAIL__").
-    // A pre-deploy build hook (scripts/build-rules.mjs) validates and substitutes the owner
-    // email from deployment configuration (VWS_OWNER_EMAIL) into ephemeral firestore.rules
-    // prior to executing `firebase deploy --only firestore:rules`.
     function isAuthorizedOwner() {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
              request.auth.token.email_verified == true &&
              request.auth.token.email == "__VWS_OWNER_EMAIL__";
     }
 
-    // 1. Sites Collection Rules (Authoritative Business Records)
-    // Direct Client SDK Writes are STRICTLY DENIED.
-    // All creation and correction operations are mediated exclusively by trusted backend
-    // Cloud Functions (commitSiteJob, commitSiteCorrection) via Firebase Admin SDK.
     match /sites/{siteId} {
       allow read: if isAuthorizedOwner();
-      allow write: if false; // Direct client SDK writes blocked; backend Admin SDK only
+      allow write: if false;
     }
 
-    // 2. Accounts Daily Collection Rules (Financial Ledgers)
-    // Direct Client SDK Writes are STRICTLY DENIED.
-    // All expense creation and category updates are mediated exclusively by trusted backend
-    // Cloud Functions (commitDailyAccountsUpdate) via Firebase Admin SDK.
     match /accounts_daily/{dateId} {
       allow read: if isAuthorizedOwner();
-      allow write: if false; // Direct client SDK writes blocked; backend Admin SDK only
+      allow write: if false;
 
-      // Nested Subcollection: Immutable Revision Audit Log
-      // Direct Client SDK Writes are STRICTLY DENIED.
-      // Audit log entries are appended strictly by backend Admin SDK transactions.
       match /audit_log/{revisionId} {
         allow read: if isAuthorizedOwner();
-        allow write: if false; // Direct client SDK writes blocked; backend Admin SDK only
+        allow write: if false;
       }
     }
 
-    // 3. System Counters (Monotonic Sequence Numbers)
-    // Direct Client SDK Writes are STRICTLY DENIED.
-    // Sequence allocation is performed strictly within backend Admin SDK transactions.
     match /system_counters/{counterId} {
       allow read: if isAuthorizedOwner();
-      allow write: if false; // Direct client SDK writes blocked; backend Admin SDK only
+      allow write: if false;
     }
 
-    // 4. System Locks (Distributed Lease Coordinator)
-    // Direct Client SDK Writes are STRICTLY DENIED.
-    // Distributed leases are acquired, renewed, and released exclusively by backend Admin SDK.
     match /system_locks/{lockId} {
       allow read: if isAuthorizedOwner();
-      allow write: if false; // Direct client SDK writes blocked; backend Admin SDK only
+      allow write: if false;
     }
 
-    // 5. Canonical System Tasks Queue (Creation Isolated from Execution)
     match /system_tasks/{taskId} {
       allow read: if isAuthorizedOwner();
-      
-      // Client can ONLY enqueue tasks with PENDING status and zero execution state.
-      // Strict allowed-field key validation rejects unexpected properties, preventing
-      // clients from injecting execution metadata, worker proofs, checksums, or export versions.
-      allow create: if isAuthorizedOwner() && 
-                       // 1. Mandatory Allowed Field Key Validation
+
+      allow create: if isAuthorizedOwner() &&
+
                        request.resource.data.keys().hasAll([
                          'taskId', 'taskType', 'status', 'idempotencyKey', 'payload',
                          'initiatingSource', 'initiatorInstanceId', 'createdAt',
@@ -84,21 +53,21 @@ service cloud.firestore {
                          'scheduledFor', 'attempts', 'maxAttempts', 'updatedAt',
                          'leaseOwner', 'leaseExpiry', 'heartbeatAt', 'completedAt', 'payloadChecksum'
                        ]) &&
-                       // 2. Strict Deterministic Document ID & Path Binding
+
                        request.resource.data.taskId is string &&
                        request.resource.data.taskId == taskId &&
-                       // 3. Client Task Type Validation (Excludes SCHEDULED_DAILY_BACKUP)
+
                        request.resource.data.taskType is string &&
                        request.resource.data.taskType in [
                          'CLIENT_MANUAL_EXPORT', 'DATABASE_JSON_DUMP', 'DRIVE_RESUMABLE_UPLOAD', 'METADATA_AUDIT'
                        ] &&
-                       // 4. Lifecycle & Attempt Invariants
+
                        request.resource.data.status == 'PENDING' &&
                        request.resource.data.attempts is int &&
                        request.resource.data.attempts == 0 &&
                        request.resource.data.maxAttempts is int &&
                        request.resource.data.maxAttempts > 0 &&
-                       // 5. Initiating Source & Client Metadata Types
+
                        request.resource.data.initiatingSource is string &&
                        request.resource.data.initiatingSource in ['CLIENT_WEB', 'CLIENT_ANDROID'] &&
                        request.resource.data.initiatorInstanceId is string &&
@@ -107,46 +76,34 @@ service cloud.firestore {
                        request.resource.data.createdAt is timestamp &&
                        request.resource.data.scheduledFor is timestamp &&
                        request.resource.data.updatedAt is timestamp &&
-                       // 6. Execution State & Worker Proofs Must Be Null / Unset
+
                        (!('leaseOwner' in request.resource.data) || request.resource.data.leaseOwner == null) &&
                        (!('leaseExpiry' in request.resource.data) || request.resource.data.leaseExpiry == null) &&
                        (!('heartbeatAt' in request.resource.data) || request.resource.data.heartbeatAt == null) &&
                        (!('completedAt' in request.resource.data) || request.resource.data.completedAt == null) &&
                        (!('payloadChecksum' in request.resource.data) || request.resource.data.payloadChecksum == null);
-      
-      // Client CANNOT update execution state or mark tasks as SUCCEEDED
-      // All task transitions executed solely by Cloud Function via Admin SDK
+
       allow update, delete: if false;
     }
 
-    // 6. System State (Authoritative Master Pointer & Config) - BACKEND ONLY WRITES
     match /system_state/{stateId} {
       allow read: if isAuthorizedOwner();
-      // Clients have ZERO write permission to system_state
-      // Master pointer updates executed solely by Cloud Function via Admin SDK
+
       allow write: if false;
     }
 
-    // 7. Backups Metadata (Audit Ledger) - BACKEND ONLY WRITES
     match /backups_metadata/{backupId} {
       allow read: if isAuthorizedOwner();
-      // Clients CANNOT forge backup success or falsify SHA-256 checksums
-      // Creation and updates executed solely by Cloud Function via Admin SDK
+
       allow write: if false;
     }
 
-    // 8. Committed Operations Ledger (Offline Reconciliation & Idempotency)
-    // Direct Client SDK Reads and Writes are STRICTLY DENIED.
-    // Queried exclusively via authenticated backend callable function queryOperationStatus
-    // using Firebase Admin SDK to resolve UNCERTAIN_COMMIT states.
     match /committed_operations/{idempotencyKey} {
-      allow read, write: if false; // Direct client SDK access blocked; backend Admin SDK only
+      allow read, write: if false;
     }
 
-    // Default deny all other paths
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-

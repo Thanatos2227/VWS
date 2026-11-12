@@ -1,12 +1,3 @@
-/**
- * src/components/sites/SiteListScreen.tsx
- * 
- * Customer Sites & Billing Ledger Screen (SCR-03).
- * Lists all latest active customer site visits for the calendar year,
- * provides fast search, payment mode filtering, edit/correction triggers,
- * history timeline inspection, and soft deletion.
- * Complies with DOC-002 (§2.3).
- */
 
 import React, { useState, useMemo } from 'react';
 import { SiteRecord } from '../../types/database';
@@ -45,20 +36,16 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
   const [filterPaymentMode, setFilterPaymentMode] = useState<'All' | 'Cash' | 'Online'>('All');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Filter only latest active records
   const activeSites = useMemo(() => {
     return sites.filter((s) => s.isLatestValidVersion && !s.isDeleted);
   }, [sites]);
 
-  // Apply search query & payment mode filters
   const filteredSites = useMemo(() => {
     return activeSites.filter((s) => {
-      // Payment Mode filter
       if (filterPaymentMode !== 'All' && s.paymentMode !== filterPaymentMode) {
         return false;
       }
 
-      // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName = s.customerName.toLowerCase().includes(q);
@@ -87,7 +74,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
   return (
     <div className="space-y-5">
       
-      {/* Top Header Bar */}
       <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -112,10 +98,8 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
         </button>
       </div>
 
-      {/* Filter & Search Bar */}
       <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center gap-3">
         
-        {/* Search Input */}
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           <input
@@ -127,7 +111,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
           />
         </div>
 
-        {/* Payment Mode Selector */}
         <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
           <Filter className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
           <span className="text-xs font-bold text-slate-600 hidden sm:inline">Mode:</span>
@@ -150,7 +133,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
 
       </div>
 
-      {/* Sites Table / Card List */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
         {filteredSites.length === 0 ? (
           <div className="py-16 text-center text-slate-400 text-xs sm:text-sm">
@@ -183,12 +165,10 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                   return (
                     <tr key={site.id} className="hover:bg-slate-50/70 transition-colors">
                       
-                      {/* Date */}
                       <td className="py-3.5 px-4 font-bold text-slate-800 whitespace-nowrap">
                         {site.workDate}
                       </td>
 
-                      {/* Customer Details */}
                       <td className="py-3.5 px-4">
                         <div className="font-black text-slate-900 text-sm">
                           {site.customerName}
@@ -202,7 +182,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                         </a>
                       </td>
 
-                      {/* Location */}
                       <td className="py-3.5 px-4">
                         <div className="text-slate-700 font-medium max-w-xs truncate">
                           {site.location}
@@ -227,7 +206,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                         })()}
                       </td>
 
-                      {/* Tanks */}
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-slate-800">
                           {site.totalTanks} {site.totalTanks === 1 ? 'Tank' : 'Tanks'}
@@ -241,12 +219,10 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                         </div>
                       </td>
 
-                      {/* Bill No. */}
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
                         {site.billNumber}
                       </td>
 
-                      {/* Payment Mode */}
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
                           site.paymentMode === 'Cash'
@@ -257,7 +233,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                         </span>
                       </td>
 
-                      {/* Amount */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="font-black text-slate-900 text-sm">
                           {formatIndianRupees(finalRupees)}
@@ -269,7 +244,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                         )}
                       </td>
 
-                      {/* Version Badge */}
                       <td className="py-3.5 px-4 text-center">
                         <button
                           onClick={() => onViewHistory(site)}
@@ -285,11 +259,9 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                         </button>
                       </td>
 
-                      {/* Actions */}
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1">
                           
-                          {/* Edit / Correct Button */}
                           <button
                             onClick={() => onEditSite(site)}
                             className="p-1.5 text-slate-500 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition-colors"
@@ -298,7 +270,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                             <Edit3 className="w-4 h-4" />
                           </button>
 
-                          {/* Version History Button */}
                           <button
                             onClick={() => onViewHistory(site)}
                             className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
@@ -307,7 +278,6 @@ export const SiteListScreen: React.FC<SiteListScreenProps> = ({
                             <History className="w-4 h-4" />
                           </button>
 
-                          {/* Delete Button */}
                           <button
                             onClick={() => handleDelete(site)}
                             disabled={deletingId === site.id}

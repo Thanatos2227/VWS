@@ -1,20 +1,6 @@
-/**
- * src/services/api/callableClient.ts
- * 
- * Typed Callable Cloud Functions Client.
- * Routes all protected mutations through authenticated 2nd Gen Firebase Cloud Functions.
- * Enforces canonical idempotency keys, normalizes callable errors, handles network failures safely,
- * and eliminates direct client Firestore writes.
- * 
- * Conforms to DOC-006 (§4, §5) and Phase 01G final reconciliation specifications.
- */
 
 import { httpsCallable, HttpsCallableResult } from 'firebase/functions';
 import { functions } from '../../config/firebase';
-
-// ==========================================
-// TYPED REQUEST & RESPONSE INTERFACES
-// ==========================================
 
 export interface CommitSiteJobPayload {
   idempotencyKey: string;
@@ -153,10 +139,6 @@ export interface PurgeExpiredSitesResponse {
   executedAt: string;
 }
 
-// ==========================================
-// ERROR NORMALIZATION & TYPES
-// ==========================================
-
 export class CallableApiError extends Error {
   public readonly code: string;
   public readonly details: unknown;
@@ -180,9 +162,6 @@ export class CallableApiError extends Error {
   }
 }
 
-/**
- * Normalizes unknown errors thrown by Firebase Functions SDK or network layers.
- */
 export function normalizeCallableError(err: unknown, idempotencyKey?: string): CallableApiError {
   if (err instanceof CallableApiError) {
     return err;
@@ -192,7 +171,6 @@ export function normalizeCallableError(err: unknown, idempotencyKey?: string): C
   const rawCode = typeof raw?.code === 'string' ? raw.code : '';
   const rawMessage = typeof raw?.message === 'string' ? raw.message : 'Unknown error during callable invocation.';
 
-  // Check for network dropouts / unavailable
   const isNetwork = 
     rawCode === 'unavailable' ||
     rawCode === 'deadline-exceeded' ||
@@ -200,7 +178,6 @@ export function normalizeCallableError(err: unknown, idempotencyKey?: string): C
     rawMessage.toLowerCase().includes('network') ||
     rawMessage.toLowerCase().includes('offline');
 
-  // Strip prefix "functions/" if present (e.g. functions/permission-denied -> permission-denied)
   const cleanCode = rawCode.startsWith('functions/') ? rawCode.replace('functions/', '') : (rawCode || (isNetwork ? 'unavailable' : 'internal'));
 
   let userFriendlyMsg = rawMessage;
@@ -215,14 +192,6 @@ export function normalizeCallableError(err: unknown, idempotencyKey?: string): C
   return new CallableApiError(userFriendlyMsg, cleanCode, raw?.details, isNetwork, idempotencyKey);
 }
 
-// ==========================================
-// DETERMINISTIC IDEMPOTENCY UTILITY
-// ==========================================
-
-/**
- * Generates canonical business-operation idempotency keys conforming to DOC-005 §3.8 / DOC-020:
- * Pattern: ^OP_IDEMP_[A-Za-z0-9_.-]+$
- */
 export function generateOperationIdempotencyKey(operationPrefix: string, naturalKey: string): string {
   const sanitizedNaturalKey = naturalKey.replace(/[^A-Za-z0-9_.-]/g, '_');
   const timestamp = Date.now();
@@ -230,9 +199,6 @@ export function generateOperationIdempotencyKey(operationPrefix: string, natural
   return `OP_IDEMP_${operationPrefix.toUpperCase()}_${sanitizedNaturalKey}_${timestamp}_${randomSuffix}`;
 }
 
-/**
- * Gets or initializes a persistent client device identifier stored in browser localStorage.
- */
 export function getClientDeviceId(): string {
   if (typeof window === 'undefined' || !window.localStorage) {
     return 'node_client_env';
@@ -246,13 +212,6 @@ export function getClientDeviceId(): string {
   return deviceId;
 }
 
-// ==========================================
-// CALLABLE FUNCTION INVOCATION WRAPPERS
-// ==========================================
-
-/**
- * Invokes commitSiteJob Cloud Function.
- */
 export async function callCommitSiteJob(
   payload: CommitSiteJobPayload
 ): Promise<CommitSiteJobResponse> {
@@ -268,9 +227,6 @@ export async function callCommitSiteJob(
   }
 }
 
-/**
- * Invokes commitSiteCorrection Cloud Function.
- */
 export async function callCommitSiteCorrection(
   payload: CommitSiteCorrectionPayload
 ): Promise<CommitSiteCorrectionResponse> {
@@ -286,9 +242,6 @@ export async function callCommitSiteCorrection(
   }
 }
 
-/**
- * Invokes commitSiteStatusChange Cloud Function (soft-delete & restore).
- */
 export async function callCommitSiteStatusChange(
   payload: CommitSiteStatusChangePayload
 ): Promise<CommitSiteStatusChangeResponse> {
@@ -304,9 +257,6 @@ export async function callCommitSiteStatusChange(
   }
 }
 
-/**
- * Invokes commitDailyAccountsUpdate Cloud Function.
- */
 export async function callCommitDailyAccountsUpdate(
   payload: CommitDailyAccountsPayload
 ): Promise<CommitDailyAccountsResponse> {
@@ -322,9 +272,6 @@ export async function callCommitDailyAccountsUpdate(
   }
 }
 
-/**
- * Invokes queryOperationStatus Cloud Function.
- */
 export async function callQueryOperationStatus(
   payload: QueryOperationStatusPayload
 ): Promise<OperationStatusResponse> {
@@ -340,9 +287,6 @@ export async function callQueryOperationStatus(
   }
 }
 
-/**
- * Invokes purgeExpiredSites Cloud Function (permanent purge of expired recycle bin records).
- */
 export async function callPurgeExpiredSites(): Promise<PurgeExpiredSitesResponse> {
   try {
     const callable = httpsCallable<Record<string, never>, PurgeExpiredSitesResponse>(

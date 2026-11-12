@@ -1,10 +1,3 @@
-/**
- * src/components/sites/SiteEntryModal.tsx
- * 
- * New Site Entry (SCR-04) and Site Correction Modal (SCR-05).
- * Implements DEC-08 (Ft & Litres), DEC-10 (Physical Bill No.), DEC-11 (Mandatory Cash/Online),
- * DEC-25 (Strict OHT/UG Selection), REC-07 (Financial Ceilings), and non-destructive corrections.
- */
 
 import React, { useState, useEffect } from 'react';
 import { SiteRecord } from '../../types/database';
@@ -38,7 +31,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
 }) => {
   const isCorrection = Boolean(existingRecord);
 
-  // Form State
   const [workDate, setWorkDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [customerName, setCustomerName] = useState<string>('');
   const [location, setLocation] = useState<string>('');
@@ -50,7 +42,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
   const [discount, setDiscount] = useState<number | ''>('');
   const [correctionReason, setCorrectionReason] = useState<string>('');
 
-  // Tanks Subform
   const [tanks, setTanks] = useState<Array<{
     tankType: 'OHT' | 'UG';
     length: number | '';
@@ -60,13 +51,11 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
     { tankType: 'OHT', length: '', breadth: '', height: '' }
   ]);
 
-  // UI state
   const [saving, setSaving] = useState<boolean>(false);
   const [capturingGps, setCapturingGps] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
-  // Populate form on edit
   useEffect(() => {
     if (existingRecord) {
       setWorkDate(existingRecord.workDate);
@@ -89,14 +78,13 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
         }))
       );
     } else {
-      // Reset form
       setWorkDate(new Date().toISOString().slice(0, 10));
       setCustomerName('');
       setLocation('');
       setContactNumber('');
       setGoogleLocation('');
       setBillNumber('');
-      setPaymentMode(''); // Explicit selection required (DEC-11)
+      setPaymentMode('');
       setBillValue('');
       setDiscount('');
       setCorrectionReason('');
@@ -108,7 +96,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Reactive financial calculations
   const numericBill = Number(billValue) || 0;
   const numericDiscount = Number(discount) || 0;
   const billPaise = toPaise(numericBill);
@@ -116,7 +103,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
   const finalPaise = calculateFinalValue(billPaise, discountPaise).finalValue;
   const finalRupees = toRupees(finalPaise);
 
-  // Tank handlers
   const handleAddTank = () => {
     setTanks([...tanks, { tankType: 'OHT', length: '', breadth: '', height: '' }]);
   };
@@ -140,7 +126,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
     setTanks(updated);
   };
 
-  // Optional GPS Capture
   const handleCaptureGps = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
@@ -163,13 +148,11 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
     );
   };
 
-  // Form Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setWarningMessage(null);
 
-    // Validation
     if (!workDate) {
       setErrorMessage('Work date is required.');
       return;
@@ -203,7 +186,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
       return;
     }
 
-    // Validate tanks
     for (let i = 0; i < tanks.length; i++) {
       const t = tanks[i];
       if (Number(t.length) <= 0 || Number(t.breadth) <= 0 || Number(t.height) <= 0) {
@@ -212,11 +194,10 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
       }
     }
 
-    // Operational ceiling warning (REC-07)
     const warnings = checkFinancialWarningCeilings({ billValue: numericBill });
     if (warnings.length > 0 && !warningMessage) {
       setWarningMessage(warnings.join(' '));
-      return; // Give user a chance to review high value
+      return;
     }
 
     setSaving(true);
@@ -254,7 +235,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl border border-slate-200">
         
-        {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -281,10 +261,8 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           
-          {/* Error Banner */}
           {errorMessage && (
             <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
@@ -292,7 +270,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
             </div>
           )}
 
-          {/* Operational Ceiling Soft Warning (REC-07) */}
           {warningMessage && (
             <div className="p-3 bg-amber-50 text-amber-800 text-xs rounded-xl border border-amber-200 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -309,14 +286,12 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
             </div>
           )}
 
-          {/* Section 1: Customer & Visit Details */}
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
               1. Customer & Location Details
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
-              {/* Work Date */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Work Date *
@@ -330,7 +305,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                 />
               </div>
 
-              {/* Customer Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Customer Name *
@@ -345,7 +319,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                 />
               </div>
 
-              {/* Location */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Location / Address *
@@ -360,7 +333,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                 />
               </div>
 
-              {/* Contact Number */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Contact Number *
@@ -375,7 +347,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                 />
               </div>
 
-              {/* Google Maps / GPS */}
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700">
@@ -415,7 +386,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
             </div>
           </div>
 
-          {/* Section 2: Water Tanks Subform (DEC-08 & DEC-25) */}
           <div className="border-t border-slate-100 pt-5">
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -450,7 +420,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                         Tank #{idx + 1}
                       </span>
                       
-                      {/* Segmented Control for OHT / UG (Strict DEC-25) */}
                       <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
                         <button
                           type="button"
@@ -476,7 +445,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                         </button>
                       </div>
 
-                      {/* Remove Button */}
                       {tanks.length > 1 && (
                         <button
                           type="button"
@@ -489,7 +457,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                       )}
                     </div>
 
-                    {/* Dimensions & Capacity Grid */}
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
@@ -560,7 +527,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
             </div>
           </div>
 
-          {/* Section 3: Billing & Payment (Single Combined Bill) */}
           <div className="border-t border-slate-100 pt-5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
               3. Billing, Physical Bill Book & Payment Mode
@@ -568,7 +534,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               
-              {/* Gross Bill Value */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Gross Bill Value (₹) *
@@ -585,7 +550,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                 />
               </div>
 
-              {/* Discount */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Discount Given (₹)
@@ -601,7 +565,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                 />
               </div>
 
-              {/* Final Reactive Value */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Final Payable (₹)
@@ -615,7 +578,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
-              {/* Physical Bill Number (DEC-10) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Physical Bill Book No. *
@@ -633,7 +595,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
                 </p>
               </div>
 
-              {/* Payment Mode (Mandatory Cash or Online DEC-11) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Payment Mode * (Explicit Selection)
@@ -672,7 +633,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
             </div>
           </div>
 
-          {/* Section 4: Correction Reason (If editing/correcting) */}
           {isCorrection && (
             <div className="border-t border-slate-100 pt-5">
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -693,7 +653,6 @@ export const SiteEntryModal: React.FC<SiteEntryModalProps> = ({
 
         </form>
 
-        {/* Modal Footer */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex items-center justify-end gap-2">
           <button
             type="button"

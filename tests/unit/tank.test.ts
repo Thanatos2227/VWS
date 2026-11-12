@@ -1,9 +1,3 @@
-/**
- * tests/unit/tank.test.ts
- * 
- * Unit tests for tank capacity calculations and dimension formatting.
- * Verifies compliance with DEC-08 (Feet & Litres) and DEC-25 (Strict OHT/UG Selection).
- */
 
 import { describe, it, expect } from 'vitest';
 import { 
@@ -19,16 +13,12 @@ describe('Tank Volume & Dimension Calculations (DEC-08)', () => {
   });
 
   it('correctly calculates capacity using standard factor 28.317', () => {
-    // 10 x 8 x 6 ft = 480 cubic feet
-    // 480 * 28.317 = 13592.16 -> rounded to 13592 Litres
     const dims = { length: 10, breadth: 8, height: 6 };
     const capacity = calculateTankCapacityLitres(dims);
     expect(capacity).toBe(13592);
   });
 
   it('handles small residential tank measurements accurately', () => {
-    // 4 x 3 x 4 ft = 48 cubic feet
-    // 48 * 28.317 = 1359.216 -> rounded to 1359 Litres
     const dims = { length: 4, breadth: 3, height: 4 };
     const capacity = calculateTankCapacityLitres(dims);
     expect(capacity).toBe(1359);
@@ -45,7 +35,6 @@ describe('Tank Volume & Dimension Calculations (DEC-08)', () => {
     expect(ohtFormatted).toBe('OHT: 10 x 8 x 6 ft (13,592 L)');
 
     const ugFormatted = formatTankDetail('UG', { length: 12, breadth: 10, height: 8 });
-    // 12 * 10 * 8 = 960 cubic feet * 28.317 = 27184.32 -> 27184 Litres
     expect(ugFormatted).toBe('UG: 12 x 10 x 8 ft (27,184 L)');
   });
 

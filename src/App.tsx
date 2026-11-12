@@ -1,10 +1,3 @@
-/**
- * src/App.tsx
- * 
- * Root Application Component for Vetri Water Solutions.
- * Integrates AuthProvider, OwnerAuthGuard, AppLayout, real-time Firestore subscriptions,
- * site and accounts state management, modals, and export triggers.
- */
 
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -38,29 +31,23 @@ const AuthenticatedApp: React.FC = () => {
   const { currentUser } = useAuth();
   const currentYear = new Date().getFullYear();
 
-  // Navigation & State
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
-  // Data Collections
   const [sites, setSites] = useState<SiteRecord[]>([]);
   const [deletedSites, setDeletedSites] = useState<SiteRecord[]>([]);
   const [accounts, setAccounts] = useState<DailyAccountsRecord[]>([]);
 
-  // Modals
   const [isSiteModalOpen, setIsSiteModalOpen] = useState<boolean>(false);
   const [editingSite, setEditingSite] = useState<SiteRecord | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
   const [historySite, setHistorySite] = useState<SiteRecord | null>(null);
   const [accountsInitialDate, setAccountsInitialDate] = useState<string | undefined>(undefined);
 
-  // Native Android Device Integration (Back Button, Splash Screen, Status Bar)
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      // Hide Splash Screen once app is authenticated and mounted
       SplashScreen.hide().catch(() => {});
 
-      // Configure Status Bar for high-contrast outdoor visibility
       StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
       StatusBar.setBackgroundColor({ color: '#0284c7' }).catch(() => {});
     }
@@ -82,7 +69,6 @@ const AuthenticatedApp: React.FC = () => {
         setActiveTab('dashboard');
         return;
       }
-      // On root dashboard, minimize / exit
       CapacitorApp.exitApp();
     });
 
@@ -91,19 +77,15 @@ const AuthenticatedApp: React.FC = () => {
     };
   }, [isSiteModalOpen, isHistoryModalOpen, activeTab]);
 
-  // Real-time Subscriptions
   useEffect(() => {
-    // 1. Subscribe to active sites for selectedYear
     const unsubSites = subscribeActiveSites(selectedYear, (updatedSites) => {
       setSites(updatedSites);
     });
 
-    // 2. Subscribe to recycle bin
     const unsubRecycle = subscribeRecycleBin((updatedDeleted) => {
       setDeletedSites(updatedDeleted);
     });
 
-    // 3. Subscribe to daily accounts for selectedYear
     const unsubAccounts = subscribeDailyAccountsForYear(selectedYear, (updatedAccounts) => {
       setAccounts(updatedAccounts);
     });
@@ -115,7 +97,6 @@ const AuthenticatedApp: React.FC = () => {
     };
   }, [selectedYear]);
 
-  // Site Handlers
   const handleOpenNewSiteModal = () => {
     setEditingSite(null);
     setIsSiteModalOpen(true);
@@ -149,13 +130,11 @@ const AuthenticatedApp: React.FC = () => {
     await restoreSite(siteId);
   };
 
-  // Accounts Handlers
   const handleOpenAccountsEntry = (date?: string) => {
     setAccountsInitialDate(date);
     setActiveTab('accounts');
   };
 
-  // Excel Download Trigger
   const handleDownloadExcel = async () => {
     try {
       await downloadExcelWorkbook({
@@ -222,7 +201,6 @@ const AuthenticatedApp: React.FC = () => {
         />
       )}
 
-      {/* Modals */}
       <SiteEntryModal
         isOpen={isSiteModalOpen}
         onClose={() => setIsSiteModalOpen(false)}

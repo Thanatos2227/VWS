@@ -1,9 +1,3 @@
-/**
- * tests/unit/backendCallableOperations.test.ts
- * 
- * Unit tests validating backend Cloud Functions logic, owner authorization guard,
- * payload validation contracts, and the 8 Atomic Commit Invariants.
- */
 
 import { describe, it, expect } from 'vitest';
 import { assertAuthorizedOwner, AUTHORIZED_OWNER_EMAIL } from '../../functions/src/config';
@@ -90,7 +84,6 @@ describe('Backend Cloud Functions — Security & Contract Verification', () => {
     });
 
     it('verifies the 8 Atomic Commit Invariants defined for backend operations', () => {
-      // Invariant verification matrix conforming to DOC-006 (§4)
       const invariants = [
         '1. Operation record exists',
         '2. Operation record status === IN_PROGRESS',

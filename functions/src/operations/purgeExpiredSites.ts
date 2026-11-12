@@ -1,11 +1,3 @@
-/**
- * functions/src/operations/purgeExpiredSites.ts
- * 
- * Authenticated Callable Function: purgeExpiredSites.
- * Permanently purges site records that have resided in the 30-day Recycle Bin
- * past their expiresForPurgeAt timestamp.
- * Conforms to DOC-005 (§3.1), DOC-006 (§2), and DEC-02.
- */
 
 import { onCall } from 'firebase-functions/v2/https';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -23,7 +15,6 @@ export const purgeExpiredSites = onCall({ region: 'asia-south1' }, async (reques
   const backendNow = Timestamp.now();
   const sitesRef = adminDb.collection('sites');
 
-  // Query soft-deleted sites where retention window has expired
   const expiredQuery = sitesRef
     .where('isDeleted', '==', true)
     .where('expiresForPurgeAt', '<=', backendNow);

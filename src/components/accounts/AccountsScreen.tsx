@@ -1,11 +1,3 @@
-/**
- * src/components/accounts/AccountsScreen.tsx
- * 
- * Accounts Module & Daily Expense Management Screen (SCR-08 & SCR-09).
- * Implements Official vs Personal ledger split, combined Staff Attendance (Wages+Tea+Bata),
- * dual Staff Salary entry modes, auto-calculated totals, and incremental addition modal.
- * Complies with DOC-002 (§2.4) and DEC-01 through DEC-25.
- */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { DailyAccountsRecord } from '../../types/database';
@@ -45,15 +37,12 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
 }) => {
   const { currentUser } = useAuth();
 
-  // Selected date for entry / edit (defaults to initial or today)
   const [selectedDate, setSelectedDate] = useState<string>(
     initialSelectedDate || new Date().toISOString().slice(0, 10)
   );
 
-  // Tab view: Daily Entry Form vs Annual Ledger Rollup
   const [viewMode, setViewMode] = useState<'daily-entry' | 'annual-ledger'>('daily-entry');
 
-  // Official Form Fields
   const [offRefreshment, setOffRefreshment] = useState<number | ''>('');
   const [offTransport, setOffTransport] = useState<number | ''>('');
   const [offSparesHO, setOffSparesHO] = useState<number | ''>('');
@@ -64,7 +53,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
   const [individualSalaryEntries, setIndividualSalaryEntries] = useState<Array<{ name: string; amount: number | '' }>>([]);
   const [offNotes, setOffNotes] = useState<string>('');
 
-  // Personal Form Fields
   const [persTransport, setPersTransport] = useState<number | ''>('');
   const [persRefreshment, setPersRefreshment] = useState<number | ''>('');
   const [persGroceriesVegMilk, setPersGroceriesVegMilk] = useState<number | ''>('');
@@ -72,17 +60,14 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
   const [persOther, setPersOther] = useState<number | ''>('');
   const [persNotes, setPersNotes] = useState<string>('');
 
-  // Incremental Add Helper Modal State
   const [incrementalField, setIncrementalField] = useState<string | null>(null);
   const [incrementalAmount, setIncrementalAmount] = useState<number | ''>('');
 
-  // UI state
   const [saving, setSaving] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
-  // Load existing data whenever selectedDate changes
   useEffect(() => {
     const existing = accounts.find((a) => a.entryDate === selectedDate);
     if (existing) {
@@ -101,7 +86,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
       setPersOther(toRupees(existing.personal.otherPaise) || '');
       setPersNotes(existing.personal.notes || '');
     } else {
-      // Clear form for new date
       setOffRefreshment('');
       setOffTransport('');
       setOffSparesHO('');
@@ -123,13 +107,11 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
     setWarningMessage(null);
   }, [selectedDate, accounts]);
 
-  // Reactive Totals
   const numOffRef = Number(offRefreshment) || 0;
   const numOffTrans = Number(offTransport) || 0;
   const numOffSpares = Number(offSparesHO) || 0;
   const numOffAttExp = Number(offStaffAttendanceExpense) || 0;
   
-  // Calculate salary based on mode
   const numOffSalary = offSalaryMode === 'individual'
     ? individualSalaryEntries.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
     : Number(offStaffSalary) || 0;
@@ -145,7 +127,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
   const dailyPersonalTotal = numPersTrans + numPersRef + numPersGroc + numPersLunch + numPersOther;
   const dailyGrandTotal = dailyOfficialTotal + dailyPersonalTotal;
 
-  // Individual salary entry helpers
   const handleAddSalaryPerson = () => {
     setIndividualSalaryEntries([...individualSalaryEntries, { name: '', amount: '' }]);
   };
@@ -164,7 +145,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
     setIndividualSalaryEntries(individualSalaryEntries.filter((_, i) => i !== index));
   };
 
-  // Incremental Add Action (Correction F)
   const applyIncrementalAdd = () => {
     if (!incrementalField || Number(incrementalAmount) <= 0) return;
     const addVal = Number(incrementalAmount);
@@ -203,7 +183,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
     setIncrementalAmount('');
   };
 
-  // Form Submit
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -215,7 +194,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
       return;
     }
 
-    // Operational ceiling warning (REC-07)
     const warnings = checkFinancialWarningCeilings({ dailyTotal: dailyGrandTotal });
     if (warnings.length > 0 && !warningMessage) {
       setWarningMessage(warnings.join(' '));
@@ -261,7 +239,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
     }
   };
 
-  // Annual Totals
   const annualSummary = useMemo(() => {
     let offTotal = 0;
     let persTotal = 0;
@@ -279,7 +256,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Header Bar */}
       <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -295,7 +271,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
           </p>
         </div>
 
-        {/* View Switcher Toggle */}
         <div className="flex items-center bg-slate-100 p-1 rounded-xl w-full md:w-auto">
           <button
             onClick={() => setViewMode('daily-entry')}
@@ -323,7 +298,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
       {viewMode === 'daily-entry' ? (
         <form onSubmit={handleSave} className="space-y-6">
           
-          {/* Date Selector & Day Totals Bar */}
           <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl p-5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-sky-400" />
@@ -340,7 +314,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
               </div>
             </div>
 
-            {/* Reactive Day Summary */}
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <div className="bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
                 <span className="text-slate-400 block text-[10px]">Official</span>
@@ -363,7 +336,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
             </div>
           </div>
 
-          {/* Feedback Banners */}
           {successMessage && (
             <div className="p-3.5 bg-emerald-50 text-emerald-800 text-xs rounded-2xl border border-emerald-200 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -394,10 +366,8 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
             </div>
           )}
 
-          {/* Side-by-Side Panels: Official (Left) vs Personal (Right) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Left Panel: Official Expenses */}
             <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
@@ -413,7 +383,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 </span>
               </div>
 
-              {/* Refreshment */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -439,7 +408,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Transport */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -465,7 +433,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Spares / Head Office */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -491,7 +458,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Staff Attendance (Combined Wages + Tea + Refreshments + Bata) */}
               <div className="bg-sky-50/60 p-3.5 rounded-2xl border border-sky-100 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-sky-900 flex items-center gap-1.5">
@@ -544,7 +510,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 </div>
               </div>
 
-              {/* Staff Salary (Monthly disbursements) */}
               <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -556,7 +521,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                     </p>
                   </div>
                   
-                  {/* Mode Selector */}
                   <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5">
                     <button
                       type="button"
@@ -627,7 +591,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 )}
               </div>
 
-              {/* Notes */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Official Notes / Remarks (Optional)
@@ -643,7 +606,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
 
             </div>
 
-            {/* Right Panel: Personal Expenses */}
             <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
@@ -659,7 +621,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 </span>
               </div>
 
-              {/* Personal Transport */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -685,7 +646,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Personal Refreshment */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -711,7 +671,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Groceries, Veg, Milk */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -737,7 +696,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Lunch / Dinner */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -763,7 +721,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Other Personal */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -789,7 +746,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
                 />
               </div>
 
-              {/* Personal Notes */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Personal Notes / Remarks (Optional)
@@ -807,7 +763,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
 
           </div>
 
-          {/* Sticky Save Action Bar */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="submit"
@@ -830,10 +785,8 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
 
         </form>
       ) : (
-        /* Annual Ledger Rollup View */
         <div className="space-y-4">
           
-          {/* Annual Metric Totals */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
               <span className="text-xs font-bold text-slate-500 block mb-1">Annual Official Total</span>
@@ -855,7 +808,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
             </div>
           </div>
 
-          {/* Ledger Table */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
             {accounts.length === 0 ? (
               <div className="py-16 text-center text-slate-400 text-xs sm:text-sm">
@@ -916,7 +868,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({
         </div>
       )}
 
-      {/* Incremental Addition Modal (Correction F) */}
       {incrementalField && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-xs p-5 shadow-2xl border border-slate-200">

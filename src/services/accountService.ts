@@ -1,16 +1,3 @@
-/**
- * src/services/accountService.ts
- * 
- * Daily Accounts & Expense Management Service.
- * Implements Official vs Personal ledger split, attendance combined wages+tea+bata,
- * staff salary modes, auto-calculated totals, and immutable audit logging.
- * Complies with DOC-002 (§2.4), DOC-005 (§3.2), DOC-006 (§4), and DEC-01 through DEC-25.
- * 
- * ARCHITECTURE INTEGRITY:
- * Protected mutations route exclusively through authenticated Cloud Functions callables
- * (commitDailyAccountsUpdate). Direct client writes are strictly prohibited to comply with
- * canonical firestore.rules.
- */
 
 import { 
   collection, 
@@ -42,10 +29,6 @@ const ACCOUNTS_COLLECTION = 'accounts_daily';
 export type OfficialExpenseFormData = OfficialExpenseFormInput;
 export type PersonalExpenseFormData = PersonalExpenseFormInput;
 
-/**
- * Saves or updates a daily account record for a given date (YYYY-MM-DD).
- * Routes mutation through authenticated commitDailyAccountsUpdate Cloud Function.
- */
 export async function saveDailyAccounts(
   entryDate: string,
   official: OfficialExpenseFormData,
@@ -56,7 +39,6 @@ export async function saveDailyAccounts(
   const clientDeviceId = getClientDeviceId();
   const idempotencyKey = generateOperationIdempotencyKey('ACCOUNTS', entryDate.replace(/-/g, ''));
 
-  // Adapt form data to typed callable payload
   const payload = adaptAccountsFormToPayload(
     entryDate,
     official,
@@ -66,7 +48,6 @@ export async function saveDailyAccounts(
     auditReason
   );
 
-  // Invoke authenticated 2nd Gen Cloud Function
   const commitResult = await callCommitDailyAccountsUpdate(payload);
 
   const calendarYear = parseInt(entryDate.slice(0, 4), 10) || new Date().getFullYear();
@@ -109,10 +90,6 @@ export async function saveDailyAccounts(
   return updatedRecord;
 }
 
-/**
- * Subscribes in real-time to all daily account records for a given calendar year.
- * Authorized under firestore.rules (allow read: if isOwner();).
- */
 export function subscribeDailyAccountsForYear(
   calendarYear: number,
   callback: (records: DailyAccountsRecord[]) => void,
@@ -138,10 +115,6 @@ export function subscribeDailyAccountsForYear(
   );
 }
 
-/**
- * Fetches the daily account record for a specific date.
- * Authorized under firestore.rules (allow read: if isOwner();).
- */
 export async function getDailyAccountForDate(entryDate: string): Promise<DailyAccountsRecord | null> {
   const docRef = doc(db, ACCOUNTS_COLLECTION, entryDate);
   const snap = await getDoc(docRef);
@@ -149,10 +122,6 @@ export async function getDailyAccountForDate(entryDate: string): Promise<DailyAc
   return snap.data() as DailyAccountsRecord;
 }
 
-/**
- * Fetches the audit log history for a specific daily account date.
- * Authorized under firestore.rules (allow read: if isOwner();).
- */
 export async function getDailyAccountAuditLog(entryDate: string): Promise<AuditLogEntry[]> {
   const q = query(
     collection(db, ACCOUNTS_COLLECTION, entryDate, 'audit_log'),

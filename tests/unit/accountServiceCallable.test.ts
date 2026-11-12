@@ -1,9 +1,3 @@
-/**
- * tests/unit/accountServiceCallable.test.ts
- * 
- * Unit tests verifying that accountService.ts routes daily accounts mutations through
- * callableClient.ts rather than direct Firestore writes.
- */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { saveDailyAccounts } from '../../src/services/accountService';
@@ -23,12 +17,12 @@ describe('Account Service — Callable Cloud Functions Integration', () => {
   });
 
   const officialData = {
-    refreshment: 120, // ₹120
-    transport: 250,   // ₹250
-    sparesHO: 500,    // ₹500
+    refreshment: 120,
+    transport: 250,
+    sparesHO: 500,
     staffAttendanceCount: 3,
-    staffAttendanceExpense: 2400, // ₹2,400 (Wages + Tea + Bata combined)
-    staffSalary: 5000, // ₹5,000
+    staffAttendanceExpense: 2400,
+    staffSalary: 5000,
     salaryEntries: [
       { id: 'sal_1', staffName: 'Murugan', amountPaise: 300000 },
       { id: 'sal_2', staffName: 'Karthi', amountPaise: 200000 }
@@ -37,18 +31,18 @@ describe('Account Service — Callable Cloud Functions Integration', () => {
   };
 
   const personalData = {
-    transport: 100, // ₹100
-    refreshment: 50, // ₹50
-    groceriesVegMilk: 450, // ₹450
-    lunchDinner: 300, // ₹300
+    transport: 100,
+    refreshment: 50,
+    groceriesVegMilk: 450,
+    lunchDinner: 300,
     other: 0,
     notes: 'Household groceries'
   };
 
   it('routes saveDailyAccounts through callCommitDailyAccountsUpdate with adapted paise', async () => {
-    const expectedOfficialPaise = (120 + 250 + 500 + 2400 + 5000) * 100; // 827,000 paise
-    const expectedPersonalPaise = (100 + 50 + 450 + 300) * 100;          // 90,000 paise
-    const expectedGrandTotalPaise = expectedOfficialPaise + expectedPersonalPaise; // 917,000 paise
+    const expectedOfficialPaise = (120 + 250 + 500 + 2400 + 5000) * 100;
+    const expectedPersonalPaise = (100 + 50 + 450 + 300) * 100;
+    const expectedGrandTotalPaise = expectedOfficialPaise + expectedPersonalPaise;
 
     vi.mocked(callableClient.callCommitDailyAccountsUpdate).mockResolvedValue({
       status: 'COMMITTED',

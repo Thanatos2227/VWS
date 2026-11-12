@@ -1,11 +1,3 @@
-/**
- * src/components/backup/BackupScreen.tsx
- * 
- * Backup & Cloud Sync Center Screen (SCR-10).
- * Implements Type 1 Excel generation, Type 2 Complete Database JSON Dump with
- * non-circular SHA-256 checksums, indefinite retention logging, and Drive status.
- * Complies with DOC-002 (§2.6) and DOC-004.
- */
 
 import React, { useState } from 'react';
 import { SiteRecord, DailyAccountsRecord } from '../../types/database';
@@ -38,7 +30,6 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
   const [lastJsonDumpTime, setLastJsonDumpTime] = useState<string | null>(null);
   const [lastSha256, setLastSha256] = useState<string | null>(null);
 
-  // Type 1: Download Master Excel (.xlsx)
   const handleDownloadExcel = async () => {
     setExportingExcel(true);
     try {
@@ -56,7 +47,6 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
     }
   };
 
-  // Type 2: Complete Database Dump (JSON) with SHA-256 Checksum
   const handleDownloadJsonDump = async () => {
     setExportingJson(true);
     try {
@@ -79,18 +69,15 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
       const encoder = new TextEncoder();
       const dataBuffer = encoder.encode(jsonString);
 
-      // Compute SHA-256 Checksum using Web Crypto API
       const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
       setLastSha256(hashHex);
 
-      // Download JSON File
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const filename = `VWS_Database_Dump_${timestamp}.json`;
       await saveFileToDevice(filename, jsonString, 'application/json');
 
-      // Download companion SHA-256 manifest
       const shaContent = `${hashHex}  ${filename}\n`;
       await saveFileToDevice(`${filename}.sha256`, shaContent, 'text/plain');
 
@@ -106,7 +93,6 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Header Banner */}
       <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -122,17 +108,14 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
           </p>
         </div>
 
-        {/* Sync Status Badge */}
         <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           <span>Local Cache Synced</span>
         </div>
       </div>
 
-      {/* Two Backup Streams Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Type 1: Excel Business Backup */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-5">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -190,7 +173,6 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
           </button>
         </div>
 
-        {/* Type 2: Complete Database Backup (JSON) */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-5">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -258,7 +240,6 @@ export const BackupScreen: React.FC<BackupScreenProps> = ({
 
       </div>
 
-      {/* Cloud Topology & Google Drive Policy Card */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center gap-2">
           <HardDrive className="w-5 h-5 text-slate-700" />

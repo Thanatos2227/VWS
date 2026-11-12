@@ -1,10 +1,3 @@
-/**
- * functions/src/operations/commitDailyAccounts.ts
- * 
- * Authenticated Callable Function: commitDailyAccountsUpdate.
- * Atomically updates accounts_daily/{entryDate} and appends immutable audit log.
- * Enforces the 8 Atomic Commit Invariants defined in DOC-006 (§4) and Phase 01G.
- */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -62,7 +55,6 @@ export const commitDailyAccountsUpdate = onCall({ region: 'asia-south1' }, async
   const workerId = `worker_${randomUUID()}`;
   const LEASE_DURATION_MS = 60 * 1000;
 
-  // Phase 1: Claim or Inspect Operation Record
   let currentFenceToken = 1;
   await adminDb.runTransaction(async (transaction) => {
     const backendNow = Timestamp.now();
@@ -125,7 +117,6 @@ export const commitDailyAccountsUpdate = onCall({ region: 'asia-south1' }, async
     };
   }
 
-  // Phase 2: Atomic Business Mutation
   const totalOfficialPaise =
     (data.official.refreshmentPaise || 0) +
     (data.official.transportPaise || 0) +
@@ -145,7 +136,6 @@ export const commitDailyAccountsUpdate = onCall({ region: 'asia-south1' }, async
   const commitResult = await adminDb.runTransaction(async (transaction) => {
     const backendNow = Timestamp.now();
 
-    // Verify Invariants:
     const opSnap = await transaction.get(opRef);
     if (!opSnap.exists) throw new HttpsError('internal', 'Operation record disappeared.');
     const op = opSnap.data()!;
@@ -175,7 +165,6 @@ export const commitDailyAccountsUpdate = onCall({ region: 'asia-south1' }, async
       revisionsCount = (existing.revisionsCount || 0) + 1;
       createdAt = existing.createdAt || backendNow;
 
-      // Append revision audit log
       const auditLogRef = accDocRef.collection('audit_log').doc();
       transaction.set(auditLogRef, {
         revisionId: auditLogRef.id,
@@ -218,7 +207,6 @@ export const commitDailyAccountsUpdate = onCall({ region: 'asia-south1' }, async
 
     transaction.set(accDocRef, updatedAccount);
 
-    // Atomically transition operation record to COMMITTED
     transaction.update(opRef, {
       status: 'COMMITTED',
       committedServerDocId: data.entryDate,

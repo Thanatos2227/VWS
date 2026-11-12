@@ -1,12 +1,3 @@
-/**
- * functions/src/operations/queryOperationStatus.ts
- * 
- * Authenticated Callable Function: queryOperationStatus.
- * Looks up an idempotency key in committed_operations using Firebase Admin SDK.
- * Returns the exact minimal payload required by the client to disambiguate:
- * COMMITTED, NOT_COMMITTED, or UNKNOWN.
- * Conforms to DOC-006 (§4) and Phase 01G final reconciliation specifications.
- */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { adminDb, assertAuthorizedOwner } from '../config.js';
@@ -32,7 +23,6 @@ export const queryOperationStatus = onCall({ region: 'asia-south1' }, async (req
     throw new HttpsError('invalid-argument', 'idempotencyKey string is required.');
   }
 
-  // Canonical pattern check (DOC-005 §3.8 / DOC-020)
   if (!data.idempotencyKey.startsWith('OP_IDEMP_')) {
     throw new HttpsError(
       'invalid-argument',
@@ -43,7 +33,6 @@ export const queryOperationStatus = onCall({ region: 'asia-south1' }, async (req
   const opRef = adminDb.collection('committed_operations').doc(data.idempotencyKey);
   const opSnap = await opRef.get();
 
-  // If record does not exist, status is UNKNOWN (it might be in flight or not yet submitted)
   if (!opSnap.exists) {
     return {
       status: 'UNKNOWN',
@@ -79,7 +68,6 @@ export const queryOperationStatus = onCall({ region: 'asia-south1' }, async (req
     };
   }
 
-  // If status is 'IN_PROGRESS', client must observe UNKNOWN (operation is still executing)
   return {
     status: 'UNKNOWN',
     fenceToken: op.fenceToken || null,

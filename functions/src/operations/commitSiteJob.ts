@@ -1,10 +1,3 @@
-/**
- * functions/src/operations/commitSiteJob.ts
- * 
- * Authenticated Callable Function: commitSiteJob.
- * Executes atomic site creation, sequence number allocation (+1), and idempotent commit.
- * Enforces the 8 Atomic Commit Invariants defined in DOC-006 (§4) and Phase 01G.
- */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -37,7 +30,6 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
   const callerEmail = assertAuthorizedOwner(request.auth);
   const data = request.data as CommitSiteJobPayload;
 
-  // Validate idempotency key format (DOC-005 §3.8 / DOC-020)
   if (!data.idempotencyKey || !data.idempotencyKey.startsWith('OP_IDEMP_')) {
     throw new HttpsError(
       'invalid-argument',
@@ -45,7 +37,6 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
     );
   }
 
-  // Validate required fields
   if (!data.workDate || !data.customerName || !data.billNumber || !data.paymentMode || !data.tanks?.length) {
     throw new HttpsError('invalid-argument', 'Missing mandatory site job fields.');
   }
@@ -54,9 +45,8 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
   const seqCounterRef = adminDb.collection('system_counters').doc('sites_seq');
 
   const workerId = `worker_${randomUUID()}`;
-  const LEASE_DURATION_MS = 60 * 1000; // 60-second lease
+  const LEASE_DURATION_MS = 60 * 1000;
 
-  // Phase 1: Claim or Inspect Operation Record
   let currentFenceToken = 1;
   await adminDb.runTransaction(async (transaction) => {
     const backendNow = Timestamp.now();
@@ -64,7 +54,6 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
 
     if (opSnap.exists) {
       const opData = opSnap.data()!;
-      // If already committed, return early idempotently
       if (opData.status === 'COMMITTED') {
         return;
       }
@@ -72,14 +61,11 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
         throw new HttpsError('failed-precondition', `Operation was terminally aborted: ${opData.terminalReason}`);
       }
 
-      // Check lease expiry for takeover contention
       const leaseExpiresAtMs = opData.leaseExpiresAt.toMillis();
       if (backendNow.toMillis() < leaseExpiresAtMs) {
-        // Active lease held by another worker
         throw new HttpsError('unavailable', 'Operation currently in progress by another worker.');
       }
 
-      // Expired lease takeover: increment fenceToken, claim lease under current workerId
       currentFenceToken = (opData.fenceToken || 1) + 1;
       transaction.update(opRef, {
         workerId,
@@ -92,7 +78,6 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
         updatedAt: backendNow
       });
     } else {
-      // First-time claim
       transaction.set(opRef, {
         idempotencyKey: data.idempotencyKey,
         operationId: `op_${randomUUID()}`,
@@ -116,7 +101,6 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
     }
   });
 
-  // Check if it was already committed before Phase 2
   const checkSnap = await opRef.get();
   if (checkSnap.exists && checkSnap.data()!.status === 'COMMITTED') {
     const committed = checkSnap.data()!;
@@ -129,51 +113,39 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
     };
   }
 
-  // Phase 2: Atomic Business Mutation & COMMITTED Ledger Transition
   const siteId = `site_${randomUUID()}`;
   const siteRef = adminDb.collection('sites').doc(siteId);
 
   let allocatedSequence = 1;
   const commitResult = await adminDb.runTransaction(async (transaction) => {
-    // Invariant requirement: backendNow must be recalculated inside every execution of the transaction callback
     const backendNow = Timestamp.now();
 
-    // 1. Read operation record
     const opSnap = await transaction.get(opRef);
     if (!opSnap.exists) {
       throw new HttpsError('internal', 'Operation record disappeared.');
     }
     const op = opSnap.data()!;
 
-    // Verify 8 Commit Invariants:
-    // Invariant 1: Record exists (verified above)
-    // Invariant 2: status === 'IN_PROGRESS'
     if (op.status !== 'IN_PROGRESS') {
       throw new HttpsError('failed-precondition', `Commit failed: status is ${op.status}`);
     }
-    // Invariant 3: fenceToken === currentFenceToken
     if (op.fenceToken !== currentFenceToken) {
       throw new HttpsError('aborted', 'Commit rejected: fencing token mismatch (superseded by takeover).');
     }
-    // Invariant 4: workerId === currentWorkerId
     if (op.workerId !== workerId) {
       throw new HttpsError('aborted', 'Commit rejected: worker ownership mismatch.');
     }
-    // Invariant 5: lease has not expired using authoritative server time
     if (backendNow.toMillis() >= op.leaseExpiresAt.toMillis()) {
       throw new HttpsError('deadline-exceeded', 'Commit rejected: worker lease expired.');
     }
-    // Invariant 6: operation not terminally aborted
     if (op.abortedAt !== null) {
       throw new HttpsError('failed-precondition', 'Commit rejected: operation marked aborted.');
     }
-    // Invariants 7 & 8: Target business record checks (new record, does not exist yet)
     const siteSnap = await transaction.get(siteRef);
     if (siteSnap.exists) {
       throw new HttpsError('already-exists', 'Target site record already exists.');
     }
 
-    // Allocate Monotonic Sequence Number
     const seqSnap = await transaction.get(seqCounterRef);
     if (seqSnap.exists) {
       allocatedSequence = (seqSnap.data()!.currentSeq || 0) + 1;
@@ -183,7 +155,6 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
       transaction.set(seqCounterRef, { id: 'sites_seq', currentSeq: 1, updatedAt: backendNow });
     }
 
-    // Commit Business Record
     const calendarYear = parseInt(data.workDate.slice(0, 4), 10) || new Date().getFullYear();
     const newSiteDoc = {
       id: siteId,
@@ -228,7 +199,6 @@ export const commitSiteJob = onCall({ region: 'asia-south1' }, async (request) =
 
     transaction.set(siteRef, newSiteDoc);
 
-    // Atomically Transition committed_operations to COMMITTED
     transaction.update(opRef, {
       status: 'COMMITTED',
       committedServerDocId: siteId,

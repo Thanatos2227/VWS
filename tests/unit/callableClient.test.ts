@@ -1,12 +1,3 @@
-/**
- * tests/unit/callableClient.test.ts
- * 
- * Unit tests for Callable Cloud Functions Client:
- * - Error normalization
- * - Network failure handling (UNKNOWN commit status)
- * - Deterministic idempotency key formatting
- * - Owner authentication and error handling
- */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { 
@@ -37,7 +28,6 @@ describe('Callable Client API & Error Normalization', () => {
       const key = generateOperationIdempotencyKey('SITE_CREATE', 'BILL-104/A');
       expect(key).toMatch(/^OP_IDEMP_[A-Za-z0-9_.-]+$/);
       expect(key).toContain('OP_IDEMP_SITE_CREATE_');
-      // Slashes must be sanitized
       expect(key).not.toContain('/');
     });
 

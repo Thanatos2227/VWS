@@ -1,17 +1,3 @@
-/**
- * tests/integration/emulatorIntegration.test.ts
- * 
- * Firebase Emulator Suite End-to-End Integration Tests.
- * Executes live tests against actual local Firebase Auth (9099), Functions (5001), 
- * and Firestore (8080) emulators started by firebase emulators:exec.
- * 
- * Complies with Milestone 04C verification requirements:
- * - Real token handling & owner authorization
- * - Site operations (create, correct, chain, soft-delete, restore, purge, replay, concurrent)
- * - Daily accounts operations (official, personal, attendance, salary, audit log)
- * - Failure & security scenarios (unauthenticated, unauthorized, lease expiry, fencing tokens)
- * - Security rules validation (client writes blocked, owner reads allowed)
- */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { 
@@ -46,7 +32,6 @@ const PREVIOUS_OWNER_EMAIL = 'vetriwatersolutions@gmail.com';
 const PREVIOUS_OWNER_PASSWORD = 'OldOwnerPassword123!';
 
 async function setupAuthEmulatorUsers() {
-  // 1. Create or ensure Owner user in Auth Emulator with verified email
   try {
     const user = await adminAuth.getUserByEmail(AUTHORIZED_OWNER_EMAIL);
     await adminAuth.updateUser(user.uid, {
@@ -63,7 +48,6 @@ async function setupAuthEmulatorUsers() {
     }
   }
 
-  // 2. Create or ensure Unauthorized Attacker user in Auth Emulator
   try {
     const attacker = await adminAuth.getUserByEmail(ATTACKER_EMAIL);
     await adminAuth.updateUser(attacker.uid, {
@@ -80,7 +64,6 @@ async function setupAuthEmulatorUsers() {
     }
   }
 
-  // 3. Create or ensure Previous Owner user in Auth Emulator (vetriwatersolutions@gmail.com)
   try {
     const oldOwner = await adminAuth.getUserByEmail(PREVIOUS_OWNER_EMAIL);
     await adminAuth.updateUser(oldOwner.uid, {
@@ -108,14 +91,10 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
   });
 
   beforeEach(async () => {
-    // Authenticate as owner before each test and ensure fresh token
     await signInWithEmailAndPassword(auth, AUTHORIZED_OWNER_EMAIL, OWNER_PASSWORD);
     await auth.currentUser?.getIdToken(true);
   });
 
-  // ==========================================
-  // 1. SITE OPERATIONS INTEGRATION
-  // ==========================================
   describe('Site Operations Live Verification', () => {
     const validSiteForm = {
       workDate: '2026-11-09',
@@ -142,9 +121,8 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
       expect(createdRecord.status).toBe('ACTIVE');
       expect(createdRecord.isLatestValidVersion).toBe(true);
       expect(createdRecord.sequenceNumber).toBeGreaterThan(0);
-      expect(createdRecord.finalValuePaise).toBe(450000); // (5000 - 500) * 100
+      expect(createdRecord.finalValuePaise).toBe(450000);
 
-      // VERIFY ACTUAL FIRESTORE DOCUMENT ON EMULATOR
       const siteDocSnap = await adminDb.collection('sites').doc(createdRecord.id).get();
       expect(siteDocSnap.exists).toBe(true);
       const serverSite = siteDocSnap.data()!;
@@ -154,7 +132,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
       expect(serverSite.isLatestValidVersion).toBe(true);
       expect(serverSite.isDeleted).toBe(false);
 
-      // VERIFY OPERATION RECORD IN committed_operations
       const opQuery = await adminDb.collection('committed_operations')
         .where('committedServerDocId', '==', createdRecord.id)
         .limit(1)
@@ -166,17 +143,15 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
     }, 60000);
 
     it('successfully commits linked corrections (v1 -> v2 -> v3) and updates predecessor status', async () => {
-      // 1. Create v1
       const v1 = await createSiteEntry({
         ...validSiteForm,
         billNumber: `BILL-CHAIN-${Date.now().toString().slice(-4)}`
       }, AUTHORIZED_OWNER_EMAIL);
 
-      // 2. Create v2 correction
       const v2Form = {
         ...validSiteForm,
         billNumber: v1.billNumber,
-        discount: 1000, // Increased discount to ₹1000
+        discount: 1000,
         correctionReason: 'Owner granted ₹500 additional discount'
       };
       const v2 = await createSiteCorrection(v1, v2Form, AUTHORIZED_OWNER_EMAIL);
@@ -184,20 +159,17 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
       expect(v2.version).toBe(2);
       expect(v2.previousRecordId).toBe(v1.id);
       expect(v2.originalRecordId).toBe(v1.id);
-      expect(v2.sequenceNumber).toBe(v1.sequenceNumber); // Sequence preserved
-      expect(v2.finalValuePaise).toBe(400000); // 4000 * 100
+      expect(v2.sequenceNumber).toBe(v1.sequenceNumber);
+      expect(v2.finalValuePaise).toBe(400000);
 
-      // VERIFY PREDECESSOR (v1) WAS SUPERSEDED ON EMULATOR
       const v1Snap = await adminDb.collection('sites').doc(v1.id).get();
       expect(v1Snap.data()!.status).toBe('SUPERSEDED');
       expect(v1Snap.data()!.isLatestValidVersion).toBe(false);
 
-      // VERIFY CURRENT (v2) IS ACTIVE
       const v2Snap = await adminDb.collection('sites').doc(v2.id).get();
       expect(v2Snap.data()!.status).toBe('ACTIVE');
       expect(v2Snap.data()!.isLatestValidVersion).toBe(true);
 
-      // 3. Create v3 correction
       const v3Form = {
         ...v2Form,
         customerName: 'Kavitha Silks & Garments Pvt Ltd',
@@ -209,7 +181,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
       expect(v3.previousRecordId).toBe(v2.id);
       expect(v3.originalRecordId).toBe(v1.id);
 
-      // VERIFY v2 IS SUPERSEDED AND v3 IS ACTIVE
       const v2UpdatedSnap = await adminDb.collection('sites').doc(v2.id).get();
       expect(v2UpdatedSnap.data()!.status).toBe('SUPERSEDED');
       expect(v2UpdatedSnap.data()!.isLatestValidVersion).toBe(false);
@@ -226,7 +197,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
         billNumber: `BILL-DEL-${Date.now().toString().slice(-4)}`
       }, AUTHORIZED_OWNER_EMAIL);
 
-      // Soft delete
       await softDeleteSite(site.id, AUTHORIZED_OWNER_EMAIL);
 
       const delSnap = await adminDb.collection('sites').doc(site.id).get();
@@ -234,7 +204,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
       expect(delSnap.data()!.deletedBy).toBe(AUTHORIZED_OWNER_EMAIL);
       expect(delSnap.data()!.expiresForPurgeAt).toBeDefined();
 
-      // Restore
       await restoreSite(site.id);
 
       const restSnap = await adminDb.collection('sites').doc(site.id).get();
@@ -262,17 +231,14 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
         tanks: [{ tankType: 'OHT' as const, length: 5, breadth: 4, height: 4, capacityLitres: 2265 }]
       };
 
-      // First call
       const res1 = await callCommitSiteJob(payload);
       expect(res1.status).toBe('COMMITTED');
 
-      // Duplicate replay with identical idempotencyKey
       const res2 = await callCommitSiteJob(payload);
       expect(res2.status).toBe('COMMITTED');
       expect(res2.siteId).toBe(res1.siteId);
       expect(res2.sequenceNumber).toBe(res1.sequenceNumber);
 
-      // Verify only ONE site was created in Firestore for this bill number
       const countSnap = await adminDb.collection('sites')
         .where('billNumber', '==', payload.billNumber)
         .get();
@@ -301,15 +267,13 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
     }, 60000);
 
     it('purges records past 30-day retention window while preserving active and recent soft-deleted records', async () => {
-      // 1. Create active site
       const activeSite = await createSiteEntry({
         ...validSiteForm,
         billNumber: `BILL-ACTIVE-${Date.now().toString().slice(-4)}`
       }, AUTHORIZED_OWNER_EMAIL);
 
-      // 2. Create artificially expired site in Recycle Bin (expiresForPurgeAt in the past)
       const expiredSiteId = `site_expired_${Date.now()}`;
-      const pastTime = new Timestamp(Math.floor(Date.now() / 1000) - 3600, 0); // 1 hour ago
+      const pastTime = new Timestamp(Math.floor(Date.now() / 1000) - 3600, 0);
       await adminDb.collection('sites').doc(expiredSiteId).set({
         id: expiredSiteId,
         customerName: 'Expired Record Company',
@@ -319,24 +283,18 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
         createdAt: pastTime
       });
 
-      // 3. Trigger purgeExpiredSitesList
       const purgeResult = await purgeExpiredSitesList();
       expect(purgeResult.purgedCount).toBeGreaterThanOrEqual(1);
       expect(purgeResult.purgedSiteIds).toContain(expiredSiteId);
 
-      // 4. Verify expired site was deleted from Firestore
       const expiredSnap = await adminDb.collection('sites').doc(expiredSiteId).get();
       expect(expiredSnap.exists).toBe(false);
 
-      // 5. Verify active site remains completely untouched
       const activeSnap = await adminDb.collection('sites').doc(activeSite.id).get();
       expect(activeSnap.exists).toBe(true);
     }, 60000);
   });
 
-  // ==========================================
-  // 2. DAILY ACCOUNTS OPERATIONS INTEGRATION
-  // ==========================================
   describe('Daily Accounts Operations Live Verification', () => {
     const testDate = '2026-11-09';
     const officialForm = {
@@ -371,24 +329,22 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
         'Initial daily expense entry'
       );
 
-      const expectedOfficialPaise = (150 + 300 + 800 + 3200 + 6000) * 100; // 1,045,000 paise
-      const expectedPersonalPaise = (120 + 60 + 550 + 380) * 100;          // 111,000 paise
-      const expectedGrandTotalPaise = expectedOfficialPaise + expectedPersonalPaise; // 1,156,000 paise
+      const expectedOfficialPaise = (150 + 300 + 800 + 3200 + 6000) * 100;
+      const expectedPersonalPaise = (120 + 60 + 550 + 380) * 100;
+      const expectedGrandTotalPaise = expectedOfficialPaise + expectedPersonalPaise;
 
       expect(record.entryDate).toBe(testDate);
       expect(record.official.totalOfficialPaise).toBe(expectedOfficialPaise);
       expect(record.personal.totalPersonalPaise).toBe(expectedPersonalPaise);
       expect(record.dailyGrandTotalPaise).toBe(expectedGrandTotalPaise);
 
-      // VERIFY ACTUAL FIRESTORE DOCUMENT ON EMULATOR
       const accDocSnap = await adminDb.collection('accounts_daily').doc(testDate).get();
       expect(accDocSnap.exists).toBe(true);
       const serverAcc = accDocSnap.data()!;
       expect(serverAcc.dailyGrandTotalPaise).toBe(expectedGrandTotalPaise);
       expect(serverAcc.official.salaryEntries.length).toBe(2);
 
-      // UPDATE ACCOUNTS FOR SAME DATE -> VERIFY AUDIT LOG SUBCOLLECTION APPEND
-      const updatedPersonal = { ...personalForm, groceriesVegMilk: 650 }; // +₹100
+      const updatedPersonal = { ...personalForm, groceriesVegMilk: 650 };
       await saveDailyAccounts(
         testDate,
         officialForm,
@@ -397,7 +353,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
         'Added extra vegetable expense ₹100'
       );
 
-      // Query subcollection audit_log on emulator
       const auditSnap = await adminDb.collection('accounts_daily').doc(testDate).collection('audit_log').get();
       expect(auditSnap.empty).toBe(false);
       const auditLog = auditSnap.docs[0].data();
@@ -408,12 +363,9 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
     }, 60000);
   });
 
-  // ==========================================
-  // 3. FAILURE AND SECURITY SCENARIOS
-  // ==========================================
   describe('Failure and Security Scenarios Live Verification', () => {
     it('rejects unauthenticated requests with unauthenticated error', async () => {
-      await signOut(auth); // Sign out from Firebase client SDK
+      await signOut(auth);
 
       const payload = {
         idempotencyKey: generateOperationIdempotencyKey('SITE_CREATE', 'UNAUTH_TEST'),
@@ -439,7 +391,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
     }, 60000);
 
     it('rejects non-owner authenticated accounts with permission-denied', async () => {
-      // Sign in as unauthorized attacker user
       await signInWithEmailAndPassword(auth, ATTACKER_EMAIL, ATTACKER_PASSWORD);
 
       const payload = {
@@ -467,7 +418,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
     }, 60000);
 
     it('strictly rejects previous owner email vetriwatersolutions@gmail.com with permission-denied', async () => {
-      // Sign in as previous owner user
       await signInWithEmailAndPassword(auth, PREVIOUS_OWNER_EMAIL, PREVIOUS_OWNER_PASSWORD);
 
       const payload = {
@@ -521,11 +471,9 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
     it('correctly queries operation status via queryOperationStatus Cloud Function', async () => {
       const testKey = generateOperationIdempotencyKey('QUERY_TEST', `SAMPLE_${Date.now()}`);
       
-      // Before operation: Status is UNKNOWN
       const resUnknown = await callQueryOperationStatus({ idempotencyKey: testKey });
       expect(resUnknown.status).toBe('UNKNOWN');
 
-      // Create an operation record manually as ABORTED_TERMINAL on emulator
       await adminDb.collection('committed_operations').doc(testKey).set({
         idempotencyKey: testKey,
         status: 'ABORTED_TERMINAL',
@@ -533,16 +481,12 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
         abortedAt: Timestamp.now()
       });
 
-      // Query again: Status is NOT_COMMITTED
       const resNotCommitted = await callQueryOperationStatus({ idempotencyKey: testKey });
       expect(resNotCommitted.status).toBe('NOT_COMMITTED');
       expect(resNotCommitted.terminalReason).toBe('Test fatal simulation');
     }, 60000);
   });
 
-  // ==========================================
-  // 4. CANONICAL SECURITY RULES VERIFICATION
-  // ==========================================
   describe('Canonical Firestore Security Rules Live Verification', () => {
     it('strictly denies direct client writes to /sites/{siteId}', async () => {
       const illegalSiteRef = doc(db, 'sites', 'illegal_client_direct_write');
@@ -552,7 +496,6 @@ describe('Live Firebase Emulator Suite Integration Tests (Milestone 04C)', () =>
         billValuePaise: 10000000
       };
 
-      // Direct client setDoc must fail with PERMISSION_DENIED under canonical firestore.rules
       await expect(setDoc(illegalSiteRef, illegalData)).rejects.toThrow(/PERMISSION_DENIED|permission-denied|Missing or insufficient permissions/i);
     });
 

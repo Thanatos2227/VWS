@@ -1,9 +1,3 @@
-/**
- * tests/unit/idempotency.test.ts
- * 
- * Unit tests for deterministic task IDs and idempotency key derivations.
- * Verifies exact compliance with DOC-005 §3.6 and §3.8.
- */
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -65,11 +59,8 @@ describe('Deterministic System-Task Identifiers (DOC-005 §3.6)', () => {
   });
 
   it('rejects mismatched or invalid task ID and idempotency key pairs', () => {
-    // Redundant IDEMP_TASK_ prefix is invalid
     expect(validateSystemTaskIdempPair('TASK_DAILY', 'IDEMP_TASK_DAILY')).toBe(false);
-    // Mismatched task details
     expect(validateSystemTaskIdempPair('TASK_BACKUP_2026', 'IDEMP_BACKUP_2027')).toBe(false);
-    // Business prefix OP_IDEMP_ is invalid for system tasks
     expect(validateSystemTaskIdempPair('TASK_BACKUP_2026', 'OP_IDEMP_BACKUP_2026')).toBe(false);
   });
 });

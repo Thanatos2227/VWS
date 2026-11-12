@@ -1,10 +1,3 @@
-/**
- * tests/unit/fileDownloader.test.ts
- * 
- * Unit tests for Unified File Downloader (saveFileToDevice).
- * Verifies cross-platform behavior: Web Blob/DOM anchor download fallback
- * and Capacitor Filesystem native download branch.
- */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { saveFileToDevice } from '../../src/utils/fileDownloader';

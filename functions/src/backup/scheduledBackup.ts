@@ -1,12 +1,3 @@
-/**
- * functions/src/backup/scheduledBackup.ts
- * 
- * Autonomous Cloud Functions (2nd Gen) Scheduled Daily Backup Worker.
- * Triggered at 23:00 IST via Cloud Scheduler (cron: '0 23 * * *', tz: 'Asia/Kolkata').
- * Retrieves owner Drive refresh token from Secret Manager: 'vws-drive-backend-refresh-token'.
- * Uploads Type 1 Excel (staged in Backups/ then published to root) and Type 2 JSON Dump (retained indefinitely).
- * Conforms to DOC-004, DOC-006, and DOC-007.
- */
 
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
@@ -30,7 +21,6 @@ export const scheduledDailyBackup = onSchedule(
     console.info(`[Scheduled Backup] Triggered at ${event.scheduleTime || new Date().toISOString()}`);
 
     try {
-      // 1. Fetch live snapshot of all collections
       const currentYear = new Date().getFullYear();
 
       const sitesSnap = await adminDb.collection('sites').get();
@@ -39,7 +29,6 @@ export const scheduledDailyBackup = onSchedule(
       const accountsSnap = await adminDb.collection('accounts_daily').get();
       const allAccounts = accountsSnap.docs.map((d) => d.data());
 
-      // 2. Build Type 2 Database JSON Dump
       const jsonDumpPayload = {
         meta: {
           application: 'Vetri Water Solutions',
@@ -59,7 +48,6 @@ export const scheduledDailyBackup = onSchedule(
       const jsonBuffer = Buffer.from(jsonString, 'utf-8');
       const jsonSha256 = createHash('sha256').update(jsonBuffer).digest('hex');
 
-      // 3. Increment export version
       const driveSyncCounterRef = adminDb.collection('system_counters').doc('drive_sync');
       let exportVersion = 1;
 
@@ -73,7 +61,6 @@ export const scheduledDailyBackup = onSchedule(
         }
       });
 
-      // 4. Retrieve OAuth Refresh Token from Secret Manager
       let driveClient: any = null;
       try {
         const secretClient = new SecretManagerServiceClient();
@@ -94,7 +81,6 @@ export const scheduledDailyBackup = onSchedule(
         console.warn('[Scheduled Backup] Secret Manager access not configured or empty. Skipping live Drive upload:', secErr);
       }
 
-      // 5. Commit backup metadata audit record in Firestore
       const backupId = `backup_${Date.now()}_v${exportVersion}`;
       const endTime = Timestamp.now();
 

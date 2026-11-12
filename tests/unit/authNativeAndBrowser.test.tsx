@@ -1,17 +1,3 @@
-/**
- * tests/unit/authNativeAndBrowser.test.tsx
- * 
- * Comprehensive Unit and Integration Test Suite for Native Android and Browser Authentication.
- * Tests:
- * 1. Native Android Google Sign-In with Google Play Services and signInWithCredential.
- * 2. Invalid or missing native ID token handling.
- * 3. User cancellation graceful handling.
- * 4. Firebase credential exchange failures.
- * 5. Unauthorized Google account rejection (including deprecated plural email and third-party accounts).
- * 6. Browser authentication regression (signInWithPopup).
- * 7. Duplicate sign-in operation prevention.
- * 8. Cleanup and sign-out logic on both native and browser platforms.
- */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
@@ -28,7 +14,6 @@ const mockSignInWithPopup = vi.fn();
 const mockSignInWithCredential = vi.fn();
 const mockCredential = vi.fn().mockReturnValue({ providerId: 'google.com', signInMethod: 'google.com' });
 
-// Mock dependencies
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
     isNativePlatform: vi.fn(),
@@ -113,7 +98,6 @@ describe('AuthContext Native and Browser Authentication Suite', () => {
       expect(mockSignInWithCredential).toHaveBeenCalledTimes(1);
       expect(mockSignInWithPopup).not.toHaveBeenCalled();
 
-      // Simulate onAuthStateChanged emitting the authenticated owner
       act(() => {
         if (authStateCallback) {
           authStateCallback({ email: AUTHORIZED_OWNER_EMAIL, uid: 'owner-uid-123' });
@@ -136,7 +120,7 @@ describe('AuthContext Native and Browser Authentication Suite', () => {
         imageUrl: '',
         serverAuthCode: '',
         authentication: {
-          idToken: '', // Missing
+          idToken: '',
           accessToken: 'mock-access-token',
         },
       });
@@ -161,7 +145,6 @@ describe('AuthContext Native and Browser Authentication Suite', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      // Should not throw
       await act(async () => {
         await result.current.signInWithGoogle();
       });
@@ -230,7 +213,6 @@ describe('AuthContext Native and Browser Authentication Suite', () => {
         await result.current.signInWithGoogle();
       });
 
-      // Firebase signOut and native GoogleAuth signOut should both be called
       expect(mockSignOut).toHaveBeenCalled();
       expect(GoogleAuth.signOut).toHaveBeenCalled();
       expect(result.current.isOwner).toBe(false);
@@ -353,21 +335,17 @@ describe('AuthContext Native and Browser Authentication Suite', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      // First call (starts in flight)
       let firstPromise: Promise<void>;
       act(() => {
         firstPromise = result.current.signInWithGoogle();
       });
 
-      // Second immediate concurrent call
       await act(async () => {
         await result.current.signInWithGoogle();
       });
 
-      // Only one popup invocation should have occurred
       expect(mockSignInWithPopup).toHaveBeenCalledTimes(1);
 
-      // Resolve the first call
       await act(async () => {
         resolveSignIn({ user: { email: AUTHORIZED_OWNER_EMAIL } });
         await firstPromise;

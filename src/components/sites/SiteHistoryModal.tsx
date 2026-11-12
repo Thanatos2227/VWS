@@ -1,10 +1,3 @@
-/**
- * src/components/sites/SiteHistoryModal.tsx
- * 
- * Version History Timeline Modal (SCR-06).
- * Displays full non-destructive audit progression (v1 -> v2 -> v3) for a customer site.
- * Complies with DOC-002 (§2.3.4) and Authoritative Decisions PD-01 through PD-04.
- */
 
 import React, { useState, useEffect } from 'react';
 import { SiteRecord } from '../../types/database';
@@ -54,7 +47,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
     getSiteVersionHistory(rootId)
       .then((records) => {
         if (mounted) {
-          // If no linked records found (e.g. single version), display current
           if (records.length === 0) {
             setHistory([site]);
           } else {
@@ -83,7 +75,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200">
         
-        {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
@@ -106,7 +97,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
           </button>
         </div>
 
-        {/* Body Timeline */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-400 text-xs">
@@ -135,7 +125,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
 
                 return (
                   <div key={rec.id} className="relative group">
-                    {/* Node Dot */}
                     <div className={`absolute -left-6 top-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                       isLatest 
                         ? 'bg-sky-600 border-white ring-2 ring-sky-300' 
@@ -144,7 +133,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
                       {isLatest && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
 
-                    {/* Version Card */}
                     <div className={`p-4 rounded-2xl border transition-all ${
                       isLatest 
                         ? 'bg-sky-50/50 border-sky-200 shadow-xs' 
@@ -176,7 +164,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Correction Reason */}
                       {rec.correctionReason && (
                         <div className="mb-3 p-2.5 bg-white border border-slate-200/80 rounded-xl text-xs flex items-start gap-2">
                           <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
@@ -187,7 +174,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
                         </div>
                       )}
 
-                      {/* Snapshot Values */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                         <div className="bg-white p-2 rounded-lg border border-slate-200/60">
                           <span className="text-[10px] text-slate-400 block font-semibold">Tanks</span>
@@ -215,7 +201,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Tanks Dimensions List */}
                       <div className="mt-3 text-[11px] space-y-1 text-slate-600 border-t border-slate-200/60 pt-2">
                         {rec.tanks.map((t, tIdx) => (
                           <div key={tIdx} className="flex items-center justify-between">
@@ -237,7 +222,6 @@ export const SiteHistoryModal: React.FC<SiteHistoryModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-3xl flex justify-end">
           <button
             onClick={onClose}

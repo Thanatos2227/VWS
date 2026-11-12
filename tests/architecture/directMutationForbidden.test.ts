@@ -1,11 +1,3 @@
-/**
- * tests/architecture/directMutationForbidden.test.ts
- * 
- * Architectural Assertion Test: Prohibition of Direct Client Mutations.
- * Enforces that client services NEVER perform direct Firestore mutations (setDoc, updateDoc, 
- * deleteDoc, addDoc, runTransaction, writeBatch), verifying that all mutations route 
- * strictly through authenticated Cloud Functions.
- */
 
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
@@ -18,7 +10,6 @@ describe('Architectural Enforcement: No Direct Client Writes', () => {
     const siteServicePath = path.join(servicesDir, 'siteService.ts');
     const content = fs.readFileSync(siteServicePath, 'utf-8');
 
-    // Prohibited client mutation SDK calls
     const prohibitedCalls = [
       /\bsetDoc\s*\(/g,
       /\bupdateDoc\s*\(/g,

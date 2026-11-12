@@ -1,9 +1,3 @@
-/**
- * tests/unit/siteServiceCallable.test.ts
- * 
- * Unit tests verifying that siteService.ts routes all mutations through
- * callableClient.ts rather than direct Firestore writes.
- */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { 
@@ -38,8 +32,8 @@ describe('Site Service — Callable Cloud Functions Integration', () => {
     googleLocation: 'https://maps.google.com/?q=11.1085,77.3411',
     billNumber: 'BILL-501',
     paymentMode: 'Online' as const,
-    billValue: 4500, // ₹4,500
-    discount: 500,  // ₹500
+    billValue: 4500,
+    discount: 500,
     tanks: [
       {
         tankType: 'UG' as const,
@@ -79,10 +73,10 @@ describe('Site Service — Callable Cloud Functions Integration', () => {
 
       expect(passedPayload.idempotencyKey).toMatch(/^OP_IDEMP_SITE_CREATE_BILL-501_/);
       expect(passedPayload.customerName).toBe('Kavitha Textiles');
-      expect(passedPayload.billValuePaise).toBe(450000); // 4500 * 100
-      expect(passedPayload.discountPaise).toBe(50000);   // 500 * 100
-      expect(passedPayload.finalValuePaise).toBe(400000); // 4000 * 100
-      expect(passedPayload.tanks[0].capacityLitres).toBe(6796); // 8*6*5*28.3168 rounded
+      expect(passedPayload.billValuePaise).toBe(450000);
+      expect(passedPayload.discountPaise).toBe(50000);
+      expect(passedPayload.finalValuePaise).toBe(400000);
+      expect(passedPayload.tanks[0].capacityLitres).toBe(6796);
 
       expect(result.id).toBe('site_server_abc123');
       expect(result.sequenceNumber).toBe(15);
@@ -160,7 +154,7 @@ describe('Site Service — Callable Cloud Functions Integration', () => {
 
       expect(result.id).toBe('site_corr_v2');
       expect(result.version).toBe(2);
-      expect(result.sequenceNumber).toBe(10); // Sequence number preserved across versions
+      expect(result.sequenceNumber).toBe(10);
       expect(result.originalRecordId).toBe('site_orig_1');
     });
   });

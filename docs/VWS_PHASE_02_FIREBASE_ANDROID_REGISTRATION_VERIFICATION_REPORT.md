@@ -190,4 +190,3 @@ Now that `D:\Downloads\google-services.json` has been discovered and inspected, 
    - Update `.env` with the genuine API key (`AIzaSyBMRC...`) and sender ID (`820277889521`).
 3. **Rebuild & Verify:**
    Compile the web assets (`npm run build`), sync Capacitor (`npx cap sync android`), and assemble the debug APK (`./gradlew assembleDebug`) for physical device installation.
-

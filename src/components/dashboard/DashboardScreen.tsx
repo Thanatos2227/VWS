@@ -1,11 +1,3 @@
-/**
- * src/components/dashboard/DashboardScreen.tsx
- * 
- * Master Cockpit Dashboard (SCR-02).
- * Displays active calendar year KPIs, reactive business margin, quick actions,
- * and recent operational activity.
- * Complies with DOC-002 (§2.2).
- */
 
 import React from 'react';
 import { SiteRecord, DailyAccountsRecord } from '../../types/database';
@@ -42,7 +34,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onDownloadExcel,
   onNavigateToTab
 }) => {
-  // Compute Active Year KPIs (Only latest valid, non-deleted records count)
   const activeSites = sites.filter((s) => s.isLatestValidVersion && !s.isDeleted);
   const totalSitesCount = activeSites.length;
 
@@ -75,7 +66,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-sky-700 via-sky-600 to-cyan-600 rounded-3xl p-6 text-white shadow-xl shadow-sky-700/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -95,7 +85,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </p>
         </div>
 
-        {/* Quick Utility Actions */}
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <button
             onClick={onOpenNewSiteModal}
@@ -121,10 +110,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </div>
       </div>
 
-      {/* Top-Level KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
         
-        {/* Total Sites */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold">Total Sites</span>
@@ -136,7 +123,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">Active customer jobs</p>
         </div>
 
-        {/* Gross Billing */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold">Gross Billing</span>
@@ -148,7 +134,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">Before discounts</p>
         </div>
 
-        {/* Discounts */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold">Discounts</span>
@@ -160,7 +145,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">Concessions given</p>
         </div>
 
-        {/* Net Revenue */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold">Net Billing</span>
@@ -172,7 +156,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">Final collected revenue</p>
         </div>
 
-        {/* Official Expenses */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold">Official Expenses</span>
@@ -184,7 +167,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">Operating costs</p>
         </div>
 
-        {/* Net Margin */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold">Net Margin</span>
@@ -198,10 +180,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
       </div>
 
-      {/* Primary Module Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
-        {/* Sites Module Summary */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -237,7 +217,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </div>
         </div>
 
-        {/* Accounts Module Summary */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -275,7 +254,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
       </div>
 
-      {/* Recent Activity Section */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

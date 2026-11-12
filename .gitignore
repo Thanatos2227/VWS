@@ -49,3 +49,14 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+*.md
+!/README.md
+docs/
+*.doc
+*.docx
+*.pdf
+*.txt
+*.rtf
+*.odt
+*.md

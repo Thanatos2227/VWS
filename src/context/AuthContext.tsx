@@ -1,10 +1,3 @@
-/**
- * src/context/AuthContext.tsx
- * 
- * Authentication context enforcing Single-Owner Security Architecture.
- * Complies with DOC-006 (Security Architecture §2) and DEC-02 (Single-Owner Application).
- * Only vetriwatersolution@gmail.com is authorized to enter the application.
- */
 
 import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { 
@@ -64,7 +57,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsOwner(true);
           setUnauthorizedAttemptEmail(null);
         } else {
-          // Strictly reject unauthorized user, capture email for alert, and terminate session immediately
           const rejectedEmail = user.email || 'unknown';
           setCurrentUser(null);
           setIsOwner(false);
@@ -102,7 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let signedInEmail: string | null = null;
 
       if (Capacitor.isNativePlatform()) {
-        // Native Android Google Play Services Authentication
         const googleUser = await GoogleAuth.signIn();
         const idToken = googleUser?.authentication?.idToken;
 
@@ -114,7 +105,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userCredential = await signInWithCredential(auth, credential);
         signedInEmail = userCredential.user.email;
       } else {
-        // Standard Web Browser Popup Authentication
         const result = await signInWithPopup(auth, googleAuthProvider);
         signedInEmail = result.user.email;
       }
@@ -127,13 +117,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             await GoogleAuth.signOut();
           } catch {
-            // Best effort cleanup
           }
         }
       }
     } catch (error: any) {
       console.error('[VWS Auth] Sign-in error:', error);
-      // Cancellation check: code 12501 (Google Play Services SIGN_IN_CANCELLED) or message containing cancel
       const errorMessage = (error?.message || '').toLowerCase();
       const isCancelled = error?.code === '12501' || 
         error?.code === 'SIGN_IN_CANCELLED' || 
@@ -158,7 +146,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           await GoogleAuth.signOut();
         } catch {
-          // Best effort cleanup
         }
       }
       setCurrentUser(null);

@@ -1,9 +1,3 @@
-/**
- * src/types/database.ts
- * 
- * Authoritative TypeScript Domain Interfaces for Vetri Water Solutions (VWS)
- * Derived strictly from VWS_DATABASE_SCHEMA.md (DOC-005)
- */
 
 import { Timestamp } from 'firebase/firestore';
 
@@ -21,20 +15,19 @@ export type ExpenseCategory =
   | 'MAINTENANCE_AND_SPARES';
 
 export interface TankSpec {
-  tankId?: string;                     // e.g. "tank_1"
-  tankIndex?: number;                  // 1-based index
-  tankType: TankType;                  // Strictly 'OHT' | 'UG' in initial UI (DEC-25)
-  length: number;                      // Length in Feet (ft)
-  breadth: number;                     // Breadth in Feet (ft)
-  height: number;                      // Height in Feet (ft)
-  capacityLitres: number;              // Volume in Litres (L) = L * B * H * 28.317
-  capacity?: number;                   // Alias for capacityLitres
-  measurementUnit?: 'Feet';            // 'Feet'
-  capacityUnit?: 'Litres';             // 'Litres'
+  tankId?: string;
+  tankIndex?: number;
+  tankType: TankType;
+  length: number;
+  breadth: number;
+  height: number;
+  capacityLitres: number;
+  capacity?: number;
+  measurementUnit?: 'Feet';
+  capacityUnit?: 'Litres';
   notes?: string;
 }
 
-// Backward-compatible alias
 export type TankCleaningDetail = TankSpec;
 
 export interface GoogleLocationData {
@@ -47,41 +40,38 @@ export interface GoogleLocationData {
 }
 
 export interface SiteRecord {
-  id: string;                          // Document ID (UUIDv4)
-  sequenceNumber: number;              // Monotonic sequence (system_counters/sites_seq)
-  siteNumber?: number;                 // Display alias for sequenceNumber
-  year: number;                        // Calendar Year (e.g. 2026)
-  calendarYear?: number;               // Alias for year
-  workDate: string;                    // "YYYY-MM-DD"
+  id: string;
+  sequenceNumber: number;
+  siteNumber?: number;
+  year: number;
+  calendarYear?: number;
+  workDate: string;
   customerName: string;
   location: string;
   contactNumber: string;
   googleLocation?: string | GoogleLocationData | null;
   
-  // Single Combined Billing Fields
-  billNumber: string;                  // Manually entered from physical bill book (DEC-10)
-  paymentMode: PaymentMode;            // 'Cash' | 'Online' (Mandatory explicit choice; DEC-11)
-  totalTanks: number;                  // Number of tanks
-  tanks: TankSpec[];                   // Tank specifications array
+  billNumber: string;
+  paymentMode: PaymentMode;
+  totalTanks: number;
+  tanks: TankSpec[];
   
-  billValuePaise: number;              // Gross billing in integer paise (REC-04)
-  discountPaise: number;               // Discount in paise
-  finalValuePaise: number;             // Net bill in paise = billValuePaise - discountPaise
+  billValuePaise: number;
+  discountPaise: number;
+  finalValuePaise: number;
   
-  // Non-Destructive Versioning (v1 -> v2 -> v3)
-  version: number;                     // 1, 2, 3...
-  originalRecordId: string;            // Root document ID (v1)
-  previousRecordId?: string | null;    // Predecessor version ID (null for v1)
-  status: RecordStatus;                // 'ACTIVE' | 'SUPERSEDED'
-  isLatestValidVersion: boolean;       // true for active version
+  version: number;
+  originalRecordId: string;
+  previousRecordId?: string | null;
+  status: RecordStatus;
+  isLatestValidVersion: boolean;
   correctedAt?: Timestamp | Date | null;
-  correctionReason?: string | null;    // Optional reason for correction (DEC-01)
+  correctionReason?: string | null;
   
-  // Soft-Deletion & 30-Day Recycle Bin
   isDeleted: boolean;
   deletedAt?: Timestamp | Date | null;
   deletedBy?: string | null;
-  expiresForPurgeAt?: Timestamp | Date | null; // 30-day purge threshold
+  expiresForPurgeAt?: Timestamp | Date | null;
   
   createdAt: Timestamp | Date;
   updatedAt: Timestamp | Date;
@@ -92,19 +82,18 @@ export interface SalaryEntry {
   type: 'INDIVIDUAL' | 'COMBINED_LUMP_SUM';
   staffName?: string;
   amountPaise: number;
-  salaryMonth?: string;                // e.g. "2026-03" (POQ-01 dual attribution)
+  salaryMonth?: string;
   notes?: string;
 }
 
-// Backward-compatible alias
 export type ExpenseItem = SalaryEntry;
 
 export interface OfficialExpenseData {
   refreshmentPaise: number;
   transportPaise: number;
   sparesHOPaise: number;
-  staffAttendanceCount: number;        // Worker headcount present (DEC-13)
-  staffAttendanceExpensePaise: number; // Combined Wages + Tea + Bata (DEC-13)
+  staffAttendanceCount: number;
+  staffAttendanceExpensePaise: number;
   salaryEntries?: SalaryEntry[];
   staffSalaryPaise: number;
   notes?: string;
@@ -123,8 +112,8 @@ export interface PersonalExpenseData {
 
 export interface DailyAccountsRecord {
   id?: string;
-  entryDate: string;                   // "YYYY-MM-DD"
-  date?: string;                       // Alias for entryDate
+  entryDate: string;
+  date?: string;
   year?: number;
   calendarYear?: number;
   

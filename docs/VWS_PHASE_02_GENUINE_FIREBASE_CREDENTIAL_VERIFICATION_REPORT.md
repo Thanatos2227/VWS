@@ -151,4 +151,3 @@ Once the owner supplies the genuine credentials, the assistant will automaticall
 - **Rules & Logic Unchanged:** Zero changes made to `firestore.rules`, `functions/src/config.ts`, or business components.
 - **Pending Decisions:** `REC-04`, `REC-06`, `REC-07`, `REC-10`, and `POQ-01` remain strictly **PENDING**.
 - **STOP Condition:** **ENFORCED.** Pausing execution awaiting genuine Firebase credentials.
-

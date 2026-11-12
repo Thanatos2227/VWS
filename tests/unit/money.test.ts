@@ -1,9 +1,3 @@
-/**
- * tests/unit/money.test.ts
- * 
- * Unit tests for financial math, paise conversions, and currency formatting.
- * Validates compliance with DEC-07, REC-04 (Integer Paise Adapter), and REC-07 (Validation Ceilings).
- */
 
 import { describe, it, expect } from 'vitest';
 import { 
@@ -21,7 +15,6 @@ describe('Financial Math & Currency Adapter (DEC-07 & REC-04)', () => {
     expect(toPaise(19.99)).toBe(1999);
     expect(toPaise(0.01)).toBe(1);
     expect(toPaise(0)).toBe(0);
-    // Classical IEEE 754 float edge case: 0.1 + 0.2 = 0.30000000000000004
     expect(toPaise(0.1 + 0.2)).toBe(30);
   });
 
@@ -33,7 +26,6 @@ describe('Financial Math & Currency Adapter (DEC-07 & REC-04)', () => {
 
   it('formats amounts in Indian numbering format', () => {
     const formatted = formatIndianRupees(150000);
-    // en-IN format should contain 1,50,000
     expect(formatted).toContain('1,50,000');
   });
 
@@ -83,9 +75,9 @@ describe('Financial Math & Currency Adapter (DEC-07 & REC-04)', () => {
     expect(normal).toHaveLength(0);
 
     const excessive = checkFinancialWarningCeilings({
-      billValue: 1_200_000,      // > 10L
-      expenseAmount: 600_000,    // > 5L
-      dailyTotal: 3_000_000,     // > 25L
+      billValue: 1_200_000,
+      expenseAmount: 600_000,
+      dailyTotal: 3_000_000,
     });
     expect(excessive).toHaveLength(3);
     expect(excessive[0]).toContain('exceeds ₹10,00,000');

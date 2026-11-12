@@ -1,11 +1,3 @@
-/**
- * src/components/layout/AppLayout.tsx
- * 
- * Central layout shell for Vetri Water Solutions.
- * Implements mobile-first responsive design, outdoor high-contrast navigation,
- * sync status pill, calendar year selector, and quick action bars.
- * Conforms to DOC-002 (Feature Specification §1 & §2.2).
- */
 
 import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
@@ -89,11 +81,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 pb-20 md:pb-0">
-      {/* Top Header Bar */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
           
-          {/* Brand Logo & Name */}
           <div 
             onClick={() => onTabChange('dashboard')} 
             className="flex items-center gap-2.5 cursor-pointer select-none"
@@ -111,7 +101,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
           </div>
 
-          {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-1">
             <button
               onClick={() => onTabChange('dashboard')}
@@ -170,10 +159,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </button>
           </nav>
 
-          {/* Right Header Status, Year Selector & Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
             
-            {/* Year Selector */}
             <div className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200/80 rounded-lg px-2 py-1 transition-colors border border-slate-200/60">
               <Calendar className="w-3.5 h-3.5 text-slate-500" />
               <select
@@ -190,7 +177,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               </select>
             </div>
 
-            {/* Sync Health Pill */}
             <div 
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
                 isOnline 
@@ -212,7 +198,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               )}
             </div>
 
-            {/* Owner Avatar & Sign Out */}
             <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
               <div 
                 className="w-8 h-8 rounded-full bg-sky-100 border border-sky-300 text-sky-800 flex items-center justify-center text-xs font-bold uppercase"
@@ -234,12 +219,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6">
         {children}
       </main>
 
-      {/* Mobile Bottom Navigation Bar (High-Contrast Outdoor Bar) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg px-2 py-1.5 flex items-center justify-around">
         <button
           onClick={() => onTabChange('dashboard')}

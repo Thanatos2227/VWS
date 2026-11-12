@@ -1,10 +1,3 @@
-/**
- * functions/src/operations/commitSiteStatusChange.ts
- * 
- * Authenticated Callable Function: commitSiteStatusChange.
- * Atomically changes site status for soft-deletion (30-day Recycle Bin) and restoration.
- * Enforces the 8 Atomic Commit Invariants defined in DOC-006 (§4) and Phase 01G.
- */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -43,7 +36,6 @@ export const commitSiteStatusChange = onCall({ region: 'asia-south1' }, async (r
   const workerId = `worker_${randomUUID()}`;
   const LEASE_DURATION_MS = 60 * 1000;
 
-  // Phase 1: Claim or Inspect Operation Record
   let currentFenceToken = 1;
   await adminDb.runTransaction(async (transaction) => {
     const backendNow = Timestamp.now();
@@ -107,11 +99,9 @@ export const commitSiteStatusChange = onCall({ region: 'asia-south1' }, async (r
     };
   }
 
-  // Phase 2: Atomic Status Mutation & Ledger Commit
   const commitResult = await adminDb.runTransaction(async (transaction) => {
     const backendNow = Timestamp.now();
 
-    // Verify Invariants:
     const opSnap = await transaction.get(opRef);
     if (!opSnap.exists) throw new HttpsError('internal', 'Operation record disappeared.');
     const op = opSnap.data()!;
@@ -132,14 +122,13 @@ export const commitSiteStatusChange = onCall({ region: 'asia-south1' }, async (r
       throw new HttpsError('failed-precondition', 'Commit rejected: operation aborted.');
     }
 
-    // Inspect target site record
     const siteSnap = await transaction.get(siteRef);
     if (!siteSnap.exists) {
       throw new HttpsError('not-found', `Site record "${data.siteId}" does not exist.`);
     }
 
     if (data.action === 'SOFT_DELETE') {
-      const purgeSeconds = backendNow.seconds + 30 * 24 * 60 * 60; // 30-day retention
+      const purgeSeconds = backendNow.seconds + 30 * 24 * 60 * 60;
       const expiresForPurgeAt = new Timestamp(purgeSeconds, backendNow.nanoseconds);
 
       transaction.update(siteRef, {
@@ -150,7 +139,6 @@ export const commitSiteStatusChange = onCall({ region: 'asia-south1' }, async (r
         updatedAt: backendNow
       });
     } else {
-      // RESTORE
       transaction.update(siteRef, {
         isDeleted: false,
         deletedAt: null,
@@ -160,7 +148,6 @@ export const commitSiteStatusChange = onCall({ region: 'asia-south1' }, async (r
       });
     }
 
-    // Atomically transition operation record to COMMITTED
     transaction.update(opRef, {
       status: 'COMMITTED',
       committedServerDocId: data.siteId,

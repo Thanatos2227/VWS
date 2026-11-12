@@ -1,11 +1,3 @@
-/**
- * src/components/sites/RecycleBinScreen.tsx
- * 
- * 30-Day Recycle Bin Screen (SCR-07).
- * Displays soft-deleted customer site records and allows safe restoration
- * within the 30-day retention window before permanent purge.
- * Complies with DOC-002 (§2.3.5).
- */
 
 import React, { useState } from 'react';
 import { SiteRecord } from '../../types/database';
@@ -53,7 +45,6 @@ export const RecycleBinScreen: React.FC<RecycleBinScreenProps> = ({
   return (
     <div className="space-y-5">
       
-      {/* Header Banner */}
       <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -75,7 +66,6 @@ export const RecycleBinScreen: React.FC<RecycleBinScreenProps> = ({
         </div>
       </div>
 
-      {/* Deleted Items List */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
         {deletedSites.length === 0 ? (
           <div className="py-16 text-center text-slate-400 text-xs sm:text-sm">
@@ -87,7 +77,6 @@ export const RecycleBinScreen: React.FC<RecycleBinScreenProps> = ({
             {deletedSites.map((site) => {
               const finalRupees = toRupees(site.finalValuePaise);
               
-              // Calculate days remaining
               let daysRemaining = 30;
               if (site.expiresForPurgeAt) {
                 const expMillis = toMillis(site.expiresForPurgeAt);

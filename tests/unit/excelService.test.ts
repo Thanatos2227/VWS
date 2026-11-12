@@ -1,14 +1,3 @@
-/**
- * tests/unit/excelService.test.ts
- * 
- * Unit tests for ExcelJS Master Workbook Generation.
- * Verifies strict compliance with DOC-007 (VWS_EXCEL_EXPORT_SPECIFICATION):
- * - Multi-year sheet partitioning: '[YEAR] - Site Details' and '[YEAR] - Accounts'
- * - Section 6.4: Dynamic formula strings accompanied by verified pre-calculated result values
- * - Multi-line tank cell formatting (OHT/UG, ft, L)
- * - Soft gray fill (#E2E8F0) and strikethrough typography on superseded rows
- * - Side-by-side Official vs Personal accounts layout with spacer column
- */
 
 import { describe, it, expect } from 'vitest';
 import { buildMasterWorkbook } from '../../src/services/excelService';
@@ -33,9 +22,9 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
       { tankIndex: 1, tankType: 'OHT', length: 10, breadth: 8, height: 6, capacityLitres: 13592 },
       { tankIndex: 2, tankType: 'UG', length: 12, breadth: 10, height: 6, capacityLitres: 20388 }
     ],
-    billValuePaise: 450000, // ₹ 4,500.00
-    discountPaise: 50000,   // ₹ 500.00
-    finalValuePaise: 400000,// ₹ 4,000.00
+    billValuePaise: 450000,
+    discountPaise: 50000,
+    finalValuePaise: 400000,
     version: 1,
     originalRecordId: 'site_101',
     previousRecordId: null,
@@ -53,8 +42,8 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
     previousRecordId: 'site_101',
     isLatestValidVersion: true,
     status: 'ACTIVE',
-    discountPaise: 20000,   // ₹ 200.00
-    finalValuePaise: 430000,// ₹ 4,300.00
+    discountPaise: 20000,
+    finalValuePaise: 430000,
     correctionReason: 'Corrected agreed discount'
   };
 
@@ -63,23 +52,23 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
     year: 2026,
     calendarYear: 2026,
     official: {
-      refreshmentPaise: 15000,        // ₹ 150.00
-      transportPaise: 30000,          // ₹ 300.00
-      sparesHOPaise: 25000,           // ₹ 250.00
+      refreshmentPaise: 15000,
+      transportPaise: 30000,
+      sparesHOPaise: 25000,
       staffAttendanceCount: 3,
-      staffAttendanceExpensePaise: 180000, // ₹ 1,800.00 (Wages + Tea + Bata)
+      staffAttendanceExpensePaise: 180000,
       staffSalaryPaise: 0,
-      totalOfficialPaise: 250000      // ₹ 2,500.00
+      totalOfficialPaise: 250000
     },
     personal: {
-      transportPaise: 10000,          // ₹ 100.00
-      refreshmentPaise: 5000,         // ₹ 50.00
-      groceriesVegMilkPaise: 45000,   // ₹ 450.00
-      lunchDinnerPaise: 30000,        // ₹ 300.00
-      otherPaise: 10000,              // ₹ 100.00
-      totalPersonalPaise: 100000      // ₹ 1,000.00
+      transportPaise: 10000,
+      refreshmentPaise: 5000,
+      groceriesVegMilkPaise: 45000,
+      lunchDinnerPaise: 30000,
+      otherPaise: 10000,
+      totalPersonalPaise: 100000
     },
-    dailyGrandTotalPaise: 350000,     // ₹ 3,500.00
+    dailyGrandTotalPaise: 350000,
     revisionsCount: 0
   };
 
@@ -104,11 +93,11 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
     });
 
     const sheet = workbook.getWorksheet('2026 - Site Details')!;
-    const row = sheet.getRow(3); // First data row
+    const row = sheet.getRow(3);
 
-    expect(row.getCell(8).value).toBe('OHT\nUG'); // Tank Types
-    expect(row.getCell(9).value).toBe('10x8x6 ft\n12x10x6 ft'); // Measurements
-    expect(row.getCell(10).value).toContain('13,592 L\n20,388 L'); // Capacity
+    expect(row.getCell(8).value).toBe('OHT\nUG');
+    expect(row.getCell(9).value).toBe('10x8x6 ft\n12x10x6 ft');
+    expect(row.getCell(10).value).toContain('13,592 L\n20,388 L');
   });
 
   it('applies soft gray fill (#E2E8F0) and strikethrough font on superseded site rows (PD-05)', async () => {
@@ -119,14 +108,12 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
     });
 
     const sheet = workbook.getWorksheet('2026 - Site Details')!;
-    const rowV1 = sheet.getRow(3); // v1 (Superseded)
-    const rowV2 = sheet.getRow(4); // v2 (Active)
+    const rowV1 = sheet.getRow(3);
+    const rowV2 = sheet.getRow(4);
 
-    // Check v1 has gray fill and strikethrough
     const billCellV1 = rowV1.getCell(11);
     expect(billCellV1.font?.strike).toBe(true);
 
-    // Check v2 does NOT have strikethrough
     const billCellV2 = rowV2.getCell(11);
     expect(billCellV2.font?.strike).toBeFalsy();
   });
@@ -139,15 +126,13 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
     });
 
     const sitesSheet = workbook.getWorksheet('2026 - Site Details')!;
-    const summaryRow = sitesSheet.getRow(5); // Row 5 is summary row
-    const finalTotalCell = summaryRow.getCell(13); // Final Value total
+    const summaryRow = sitesSheet.getRow(5);
+    const finalTotalCell = summaryRow.getCell(13);
 
-    // Formula cell structure check
     const cellValue = finalTotalCell.value as { formula: string; result: number };
     expect(cellValue).toBeDefined();
     expect(typeof cellValue.formula).toBe('string');
     expect(cellValue.formula).toContain('SUMIF');
-    // Only active v2 should be summed: ₹ 4,300.00
     expect(cellValue.result).toBe(4300);
   });
 
@@ -161,18 +146,15 @@ describe('ExcelJS Master Workbook Generator (DOC-007)', () => {
     const sheet = workbook.getWorksheet('2026 - Accounts')!;
     const headerRow1 = sheet.getRow(1);
 
-    // Row 1 Merged Headers
     expect(headerRow1.getCell('A').value).toContain('OFFICIAL EXPENSES');
     expect(headerRow1.getCell('J').value).toContain('PERSONAL EXPENSES');
     expect(headerRow1.getCell('P').value).toBe('GRAND TOTAL');
 
-    // Data Row (Row 3)
     const dataRow = sheet.getRow(3);
-    expect(dataRow.getCell(1).value).toBe('2026-03-15'); // Date
-    expect(dataRow.getCell(6).value).toBe(1800); // Staff Attendance (Wages+Tea+Bata)
-    expect(dataRow.getCell(9).value).toBe(''); // Column I Spacer
+    expect(dataRow.getCell(1).value).toBe('2026-03-15');
+    expect(dataRow.getCell(6).value).toBe(1800);
+    expect(dataRow.getCell(9).value).toBe('');
 
-    // Row 3 Formula cells
     const offTotalCell = dataRow.getCell(8).value as { formula: string; result: number };
     expect(offTotalCell.formula).toBe('SUM(B3:D3) + F3 + G3');
     expect(offTotalCell.result).toBe(2500);

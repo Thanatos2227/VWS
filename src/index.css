@@ -18,13 +18,11 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* High contrast outdoors for numeric inputs and buttons */
   input, select, textarea, button {
     @apply text-base;
   }
 }
 
-/* Custom scrollbars for clean desktop tables */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -39,4 +37,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
-

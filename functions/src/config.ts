@@ -1,9 +1,3 @@
-/**
- * functions/src/config.ts
- * 
- * Central Firebase Admin SDK Initialization & Security Configuration.
- * Conforms to DOC-006 (§2, §4, §5) and DEC-02.
- */
 
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -19,9 +13,6 @@ export const adminAuth = getAuth();
 
 export const AUTHORIZED_OWNER_EMAIL = 'vetriwatersolution@gmail.com';
 
-/**
- * Validates that an incoming callable request originates from the authenticated owner.
- */
 export function assertAuthorizedOwner(authContext: { token?: { email?: string } } | undefined): string {
   if (!authContext || !authContext.token || !authContext.token.email) {
     throw new HttpsError(

@@ -1,32 +1,3 @@
-/**
- * src/services/adapters/financialAdapter.ts
- * 
- * Financial Domain Adapter & Governance Boundary.
- * Encapsulates conversion between Rupee domain inputs and persisted *Paise schema properties.
- * 
- * GOVERNANCE NOTICE:
- * REC-04 (Integer Paise Representation) remains PENDING OWNER APPROVAL.
- * This adapter isolates the database schema naming convention from UI components and calculation engines.
- * If the project owner approves or rejects REC-04, schema alterations remain isolated to this module.
- * 
- * PERSISTED FINANCIAL FIELD CATALOG (Pending REC-04):
- * - sites.billValuePaise (integer)
- * - sites.discountPaise (integer)
- * - sites.finalValuePaise (integer)
- * - accounts_daily.official.refreshmentPaise (integer)
- * - accounts_daily.official.transportPaise (integer)
- * - accounts_daily.official.sparesHOPaise (integer)
- * - accounts_daily.official.staffAttendanceExpensePaise (integer)
- * - accounts_daily.official.staffSalaryPaise (integer)
- * - accounts_daily.official.totalOfficialPaise (integer)
- * - accounts_daily.personal.transportPaise (integer)
- * - accounts_daily.personal.refreshmentPaise (integer)
- * - accounts_daily.personal.groceriesVegMilkPaise (integer)
- * - accounts_daily.personal.lunchDinnerPaise (integer)
- * - accounts_daily.personal.otherPaise (integer)
- * - accounts_daily.personal.totalPersonalPaise (integer)
- * - accounts_daily.dailyGrandTotalPaise (integer)
- */
 
 import { toPaise, calculateFinalValue } from '../../utils/money';
 import { calculateTankCapacityLitres } from '../../utils/tank';
@@ -44,8 +15,8 @@ export interface SiteFormInput {
   googleLocation?: string;
   billNumber: string;
   paymentMode: 'Cash' | 'Online';
-  billValue: number; // In Rupees (DEC-07)
-  discount: number; // In Rupees (DEC-07)
+  billValue: number;
+  discount: number;
   tanks: Array<{
     tankType: 'OHT' | 'UG';
     length: number;
@@ -80,9 +51,6 @@ export interface PersonalExpenseFormInput {
   notes?: string;
 }
 
-/**
- * Adapts UI site form data into backend commitSiteJob payload.
- */
 export function adaptSiteFormToJobPayload(
   data: SiteFormInput,
   idempotencyKey: string,
@@ -115,9 +83,6 @@ export function adaptSiteFormToJobPayload(
   };
 }
 
-/**
- * Adapts UI site correction data into backend commitSiteCorrection payload.
- */
 export function adaptSiteFormToCorrectionPayload(
   previousRecordId: string,
   expectedPreviousVersion: number,
@@ -135,9 +100,6 @@ export function adaptSiteFormToCorrectionPayload(
   };
 }
 
-/**
- * Adapts UI daily accounts form data into backend commitDailyAccountsUpdate payload.
- */
 export function adaptAccountsFormToPayload(
   entryDate: string,
   official: OfficialExpenseFormInput,

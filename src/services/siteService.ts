@@ -1,16 +1,3 @@
-/**
- * src/services/siteService.ts
- * 
- * Customer Site Details Management Service.
- * Implements non-destructive correction chains (v1 -> v2 -> v3), 
- * soft-deletion with 30-day recycle bin, reactive totals, and Firestore integration.
- * Complies with DOC-002 (§2.3), DOC-005 (§3.1), DOC-006 (§4), and DEC-01 through DEC-25.
- * 
- * ARCHITECTURE INTEGRITY:
- * Protected mutations route exclusively through authenticated Cloud Functions callables
- * (commitSiteJob, commitSiteCorrection, commitSiteStatusChange). Direct client writes
- * are strictly prohibited to comply with canonical firestore.rules.
- */
 
 import { 
   collection, 
@@ -43,15 +30,10 @@ const SITES_COLLECTION = 'sites';
 
 export type SiteFormData = SiteFormInput;
 
-/**
- * Creates a brand-new customer site entry (Version 1).
- * Routes mutation through authenticated commitSiteJob Cloud Function.
- */
 export async function createSiteEntry(
   data: SiteFormData, 
   creatorEmail: string
 ): Promise<SiteRecord> {
-  // Validate mandatory fields
   if (!data.workDate) throw new Error('Work date is required.');
   if (!data.customerName?.trim()) throw new Error('Customer name is required.');
   if (!data.location?.trim()) throw new Error('Location is required.');
@@ -63,10 +45,8 @@ export async function createSiteEntry(
   const clientDeviceId = getClientDeviceId();
   const idempotencyKey = generateOperationIdempotencyKey('SITE_CREATE', data.billNumber);
 
-  // Adapt form data to typed callable payload
   const payload = adaptSiteFormToJobPayload(data, idempotencyKey, clientDeviceId);
 
-  // Invoke authenticated 2nd Gen Cloud Function
   const commitResult = await callCommitSiteJob(payload);
 
   const calendarYear = parseInt(data.workDate.slice(0, 4), 10) || new Date().getFullYear();
@@ -123,10 +103,6 @@ export async function createSiteEntry(
   return committedRecord;
 }
 
-/**
- * Creates an immutable correction record (v2, v3, etc.) for an existing site.
- * Routes mutation through authenticated commitSiteCorrection Cloud Function.
- */
 export async function createSiteCorrection(
   previousRecord: SiteRecord,
   updatedData: SiteFormData,
@@ -203,10 +179,6 @@ export async function createSiteCorrection(
   return newCorrectionRecord;
 }
 
-/**
- * Soft-deletes a site record, moving it to the 30-day Recycle Bin.
- * Routes mutation through authenticated commitSiteStatusChange Cloud Function.
- */
 export async function softDeleteSite(siteId: string, _userEmail: string): Promise<void> {
   const clientDeviceId = getClientDeviceId();
   const idempotencyKey = generateOperationIdempotencyKey('SITE_SOFTDEL', siteId);
@@ -219,10 +191,6 @@ export async function softDeleteSite(siteId: string, _userEmail: string): Promis
   });
 }
 
-/**
- * Restores a soft-deleted site record back to active status.
- * Routes mutation through authenticated commitSiteStatusChange Cloud Function.
- */
 export async function restoreSite(siteId: string): Promise<void> {
   const clientDeviceId = getClientDeviceId();
   const idempotencyKey = generateOperationIdempotencyKey('SITE_RESTORE', siteId);
@@ -235,10 +203,6 @@ export async function restoreSite(siteId: string): Promise<void> {
   });
 }
 
-/**
- * Permanently purges site records that have resided in the 30-day Recycle Bin past expiresForPurgeAt.
- * Routes through authenticated purgeExpiredSites Cloud Function.
- */
 export async function purgeExpiredSitesList(): Promise<{ purgedCount: number; purgedSiteIds: string[] }> {
   const result = await callPurgeExpiredSites();
   return {
@@ -247,11 +211,6 @@ export async function purgeExpiredSitesList(): Promise<{ purgedCount: number; pu
   };
 }
 
-/**
- * Subscribes in real-time to active sites for a given calendar year.
- * Only returns latest valid versions (excluding superseded versions and soft-deleted records).
- * Authorized under firestore.rules (allow read: if isOwner();).
- */
 export function subscribeActiveSites(
   calendarYear: number, 
   callback: (sites: SiteRecord[]) => void,
@@ -278,10 +237,6 @@ export function subscribeActiveSites(
   );
 }
 
-/**
- * Subscribes in real-time to the 30-day Recycle Bin.
- * Authorized under firestore.rules (allow read: if isOwner();).
- */
 export function subscribeRecycleBin(
   callback: (sites: SiteRecord[]) => void,
   onError?: (err: Error) => void
@@ -305,10 +260,6 @@ export function subscribeRecycleBin(
   );
 }
 
-/**
- * Fetches the complete version history chain for a site (v1 -> v2 -> v3).
- * Authorized under firestore.rules (allow read: if isOwner();).
- */
 export async function getSiteVersionHistory(originalRecordId: string): Promise<SiteRecord[]> {
   const q = query(
     collection(db, SITES_COLLECTION),
