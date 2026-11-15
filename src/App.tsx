@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { OwnerAuthGuard } from './components/auth/OwnerAuthGuard';
 import { AppLayout, ActiveTab } from './components/layout/AppLayout';
@@ -7,7 +7,11 @@ import { DashboardScreen } from './components/dashboard/DashboardScreen';
 import { SiteListScreen } from './components/sites/SiteListScreen';
 import { SiteEntryModal } from './components/sites/SiteEntryModal';
 import { SiteHistoryModal } from './components/sites/SiteHistoryModal';
-import { ReminderModal } from './components/reminders/ReminderModal';
+import { ImprovedReminderModal } from './components/reminders/ImprovedReminderModal';
+import { 
+  generateImprovedRemindersFromSites, 
+  computeNotificationCounts 
+} from './services/improvedReminderService';
 import { RecycleBinScreen } from './components/sites/RecycleBinScreen';
 import { AccountsScreen } from './components/accounts/AccountsScreen';
 import { BackupScreen } from './components/backup/BackupScreen';
@@ -45,6 +49,11 @@ const AuthenticatedApp: React.FC = () => {
   const [isReminderModalOpen, setIsReminderModalOpen] = useState<boolean>(false);
   const [historySite, setHistorySite] = useState<SiteRecord | null>(null);
   const [accountsInitialDate, setAccountsInitialDate] = useState<string | undefined>(undefined);
+
+  const notificationCounts = useMemo(() => {
+    const reminders = generateImprovedRemindersFromSites(sites);
+    return computeNotificationCounts(reminders);
+  }, [sites]);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -171,6 +180,7 @@ const AuthenticatedApp: React.FC = () => {
           onDownloadExcel={handleDownloadExcel}
           onNavigateToTab={(tab) => setActiveTab(tab)}
           onOpenReminders={() => setIsReminderModalOpen(true)}
+          notificationCounts={notificationCounts}
         />
       )}
 
@@ -221,7 +231,7 @@ const AuthenticatedApp: React.FC = () => {
         site={historySite}
       />
 
-      <ReminderModal
+      <ImprovedReminderModal
         isOpen={isReminderModalOpen}
         onClose={() => setIsReminderModalOpen(false)}
         sites={sites}

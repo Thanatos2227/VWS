@@ -2,6 +2,8 @@
 import React from 'react';
 import { SiteRecord, DailyAccountsRecord } from '../../types/database';
 import { toRupees, formatIndianRupees } from '../../utils/money';
+import { NotificationIndicator } from '../reminders/NotificationIndicator';
+import { NotificationCounts } from '../../types/improvedReminder';
 import { 
   Building2, 
   Wallet, 
@@ -12,8 +14,7 @@ import {
   Plus, 
   Download, 
   CheckCircle2,
-  Layers,
-  Bell
+  Layers
 } from 'lucide-react';
 
 interface DashboardScreenProps {
@@ -25,6 +26,7 @@ interface DashboardScreenProps {
   onDownloadExcel: () => void;
   onNavigateToTab: (tab: 'sites' | 'accounts' | 'backup') => void;
   onOpenReminders?: () => void;
+  notificationCounts?: NotificationCounts;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -35,7 +37,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onOpenAccountsEntry,
   onDownloadExcel,
   onNavigateToTab,
-  onOpenReminders
+  onOpenReminders,
+  notificationCounts
 }) => {
   const activeSites = sites.filter((s) => s.isLatestValidVersion && !s.isDeleted);
   const totalSitesCount = activeSites.length;
@@ -103,14 +106,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <Wallet className="w-4 h-4" />
             <span>+ Daily Expense</span>
           </button>
-          <button
-            onClick={onOpenReminders}
-            className="p-2.5 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-xl transition-colors border border-white/20"
-            title="Service Reminders"
-            aria-label="Service Reminders"
-          >
-            <Bell className="w-4 h-4 text-white" />
-          </button>
+          <NotificationIndicator
+            counts={notificationCounts || { dueToday: 0, overdue: 0, totalActionable: 0 }}
+            onClick={onOpenReminders || (() => {})}
+          />
           <button
             onClick={onDownloadExcel}
             className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20"
