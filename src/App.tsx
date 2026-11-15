@@ -7,6 +7,7 @@ import { DashboardScreen } from './components/dashboard/DashboardScreen';
 import { SiteListScreen } from './components/sites/SiteListScreen';
 import { SiteEntryModal } from './components/sites/SiteEntryModal';
 import { SiteHistoryModal } from './components/sites/SiteHistoryModal';
+import { ReminderModal } from './components/reminders/ReminderModal';
 import { RecycleBinScreen } from './components/sites/RecycleBinScreen';
 import { AccountsScreen } from './components/accounts/AccountsScreen';
 import { BackupScreen } from './components/backup/BackupScreen';
@@ -41,6 +42,7 @@ const AuthenticatedApp: React.FC = () => {
   const [isSiteModalOpen, setIsSiteModalOpen] = useState<boolean>(false);
   const [editingSite, setEditingSite] = useState<SiteRecord | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState<boolean>(false);
   const [historySite, setHistorySite] = useState<SiteRecord | null>(null);
   const [accountsInitialDate, setAccountsInitialDate] = useState<string | undefined>(undefined);
 
@@ -63,6 +65,10 @@ const AuthenticatedApp: React.FC = () => {
       }
       if (isHistoryModalOpen) {
         setIsHistoryModalOpen(false);
+        return;
+      }
+      if (isReminderModalOpen) {
+        setIsReminderModalOpen(false);
         return;
       }
       if (activeTab !== 'dashboard') {
@@ -164,6 +170,7 @@ const AuthenticatedApp: React.FC = () => {
           onOpenAccountsEntry={handleOpenAccountsEntry}
           onDownloadExcel={handleDownloadExcel}
           onNavigateToTab={(tab) => setActiveTab(tab)}
+          onOpenReminders={() => setIsReminderModalOpen(true)}
         />
       )}
 
@@ -212,6 +219,12 @@ const AuthenticatedApp: React.FC = () => {
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
         site={historySite}
+      />
+
+      <ReminderModal
+        isOpen={isReminderModalOpen}
+        onClose={() => setIsReminderModalOpen(false)}
+        sites={sites}
       />
     </AppLayout>
   );

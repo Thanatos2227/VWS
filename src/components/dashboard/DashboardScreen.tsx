@@ -12,7 +12,8 @@ import {
   Plus, 
   Download, 
   CheckCircle2,
-  Layers
+  Layers,
+  Bell
 } from 'lucide-react';
 
 interface DashboardScreenProps {
@@ -23,6 +24,7 @@ interface DashboardScreenProps {
   onOpenAccountsEntry: (date?: string) => void;
   onDownloadExcel: () => void;
   onNavigateToTab: (tab: 'sites' | 'accounts' | 'backup') => void;
+  onOpenReminders?: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -32,7 +34,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onOpenNewSiteModal,
   onOpenAccountsEntry,
   onDownloadExcel,
-  onNavigateToTab
+  onNavigateToTab,
+  onOpenReminders
 }) => {
   const activeSites = sites.filter((s) => s.isLatestValidVersion && !s.isDeleted);
   const totalSitesCount = activeSites.length;
@@ -99,6 +102,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           >
             <Wallet className="w-4 h-4" />
             <span>+ Daily Expense</span>
+          </button>
+          <button
+            onClick={onOpenReminders}
+            className="p-2.5 bg-white/10 hover:bg-white/20 active:bg-white/30 rounded-xl transition-colors border border-white/20"
+            title="Service Reminders"
+            aria-label="Service Reminders"
+          >
+            <Bell className="w-4 h-4 text-white" />
           </button>
           <button
             onClick={onDownloadExcel}
